@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume - Ye Liao (Product Marketing Operations)</title>
+    <style>
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.6;
+            width: 800px; 
+            margin: 0 auto;
+            padding: 50px 60px;
+            box-sizing: border-box; 
+            background-color: white;
+        }
+        h1 {
+            text-align: center;
+            font-size: 32px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            color: #000;
+            letter-spacing: 2px;
+        }
+        .contact-info {
+            text-align: center;
+            font-size: 15px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+        h2 {
+            font-size: 18px;
+            text-transform: uppercase;
+            background-color: #f9f9f9;
+            padding: 8px 12px;
+            margin-top: 30px;
+            margin-bottom: 12px;
+            border-left: 6px solid #ff6700; /* Xiaomi Orange Style */
+            font-weight: 800;
+        }
+        .section-content {
+            font-size: 14.5px;
+            margin-bottom: 20px;
+            text-align: left; 
+        }
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-weight: bold;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+        .entry-sub {
+            display: flex;
+            justify-content: space-between;
+            font-style: italic;
+            color: #444;
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        .date-span {
+            white-space: nowrap;
+            margin-left: 25px;
+            font-weight: bold;
+        }
+        ul {
+            margin: 8px 0 15px 0;
+            padding-left: 22px;
+        }
+        li {
+            margin-bottom: 6px;
+        }
+        .skill-item {
+            margin-bottom: 5px;
+        }
+        @media print {
+            body { margin: 0; padding: 40px; width: 100%; }
+            h2 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>YE LIAO</h1>
+    <div class="contact-info">
+        Singapore | +65-83413757 / +86-19858175635 | yel792922@gmail.com
+    </div>
+
+    <h2>PROFESSIONAL SUMMARY</h2>
+    <div class="section-content">
+        MSc candidate in <strong>Knowledge Management</strong> with a specialized focus on <strong>Business Intelligence</strong> and product operations. Experienced in building scalable market-entry databases and performing offline channel audits for <strong>Mobile gaming hardware</strong> brands. Skilled in synthesizing cross-market data to support Go-To-Market (GTM) decisions and coordinating influencer-led marketing campaigns within the Singapore ecosystem.
+    </div>
+
+    <h2>EDUCATION</h2>
+    <div class="section-content">
+        <div class="entry-header">
+            <span>Nanyang Technological University</span>
+            <span class="date-span">Singapore</span>
+        </div>
+        <div class="entry-sub">
+            <span>Master of Science in Knowledge Management (Wee Kim Wee School)</span>
+            <span class="date-span">Aug. 2025 – June 2026 (Present)</span>
+        </div>
+        <ul>
+            <li><strong>Core Course: Business Intelligence</strong> – Focused on data-driven decision-making and the strategic management of information assets.</li>
+        </ul>
+
+        <div class="entry-header">
+            <span>Zhejiang University of Technology</span>
+            <span class="date-span">Hangzhou, China</span>
+        </div>
+        <div class="entry-sub">
+            <span>Bachelor of Arts in Broadcasting and TV Journalism</span>
+            <span class="date-span">Sept. 2020 – June 2024</span>
+        </div>
+        <ul>
+            <li>GPA: 3.74/5.0 | High proficiency in bilingual communication and media analytics.</li>
+        </ul>
+    </div>
+
+    <h2>FORMAL WORKING EXPERIENCE</h2>
+    <div class="section-content">
+        <div class="entry-header">
+            <span>Wenzhou Pengtai Machinery Co., Ltd.</span>
+            <span class="date-span">Wenzhou, China</span>
+        </div>
+        <div class="entry-sub">
+            <span>Sales and Marketing Assistant</span>
+            <span class="date-span">Mar. 2024 – June 2025</span>
+        </div>
+        <ul>
+            <li><strong>Market Analysis:</strong> Conducted machinery market research in Africa and Southeast Asia to identify regional trends and optimize marketing strategies.</li>
+            <li><strong>Project Support:</strong> Managed daily activity including copywriting, graphic design, and advertising of company products on global social platforms.</li>
+            <li><strong>Operational Coordination:</strong> Directed logistics for marketing events, including materials production and personnel coordination to ensure high execution quality.</li>
+        </ul>
+    </div>
+
+    <h2>INTERNSHIP EXPERIENCE</h2>
+    <div class="section-content">
+        <div class="entry-header">
+            <span>GameSir (Marketing & Communication)</span>
+            <span class="date-span">Singapore</span>
+        </div>
+        <div class="entry-sub">
+            <span>Marketing and Communication Intern</span>
+            <span class="date-span">Oct. 2025 – Present</span>
+        </div>
+        <ul>
+            <li><strong>Database Construction:</strong> Built scalable market-entry databases covering 30+ Singapore entities across retail chains, distributors, telcos, and smartphone brands to enable data-driven outreach.</li>
+            <li><strong>Channel Mapping & Audits:</strong> Led offline audits for 10+ flagship retail locations, producing reports on authorization status, shelf placement, and promotional exposure.</li>
+            <li><strong>Influencer Operations:</strong> Managed a local influencer pipeline (15+ KOLs) for TikTok; coordinated outreach, sample allocation, and ad-code tracking for campaign execution.</li>
+            <li><strong>Campus Partnerships:</strong> Consolidated verified contacts for 6 universities/polytechnics and youth organizations to create a reusable framework for community engagement.</li>
+            <li><strong>Reporting:</strong> Delivered weekly presentation-ready reports and clean data exports to support internal stakeholder decisions and cross-market rollout planning.</li>
+        </ul>
+
+        <div class="entry-header">
+            <span>Migu Digital Media Co., Ltd.</span>
+            <span class="date-span">Hangzhou, China</span>
+        </div>
+        <div class="entry-sub">
+            <span>Content Planning & Data Assistant</span>
+            <span class="date-span">June 2023 – Aug. 2023</span>
+        </div>
+        <ul>
+            <li>Utilized visual dashboards to monitor platform engagement and presented analysis to support content planning for social media accounts.</li>
+        </ul>
+
+        <div class="entry-header">
+            <span>The Xinhua News Agency</span>
+            <span class="date-span">Hangzhou, China</span>
+        </div>
+        <div class="entry-sub">
+            <span>Intern Editor at Convergence Media Center</span>
+            <span class="date-span">Sept. 2023 – Dec. 2023</span>
+        </div>
+        <ul>
+            <li>Summarized special reports for the Hangzhou Asian Games and conducted comparative analysis of feedback from domestic and foreign audiences.</li>
+        </ul>
+    </div>
+
+    <h2>LEADERSHIP & SKILLS</h2>
+    <div class="section-content">
+        <div class="entry-header">
+            <span>Zhejiang University of Technology Young Volunteer Association</span>
+            <span class="date-span">Oct. 2020 – June 2021</span>
+        </div>
+        <ul>
+            <li>Leading member responsible for overseeing project promotion and inter-departmental coordination for school volunteer events.</li>
+        </ul>
+        
+        <div class="skill-item"><strong>Technical Proficiencies:</strong> Business Intelligence Frameworks, Microsoft Excel (Expert), PowerPoint, Visio, Python.</div>
+        <div class="skill-item"><strong>Digital Media:</strong> Adobe Premiere Pro, Photoshop, Figma/Miro (Basic).</div>
+        <div class="skill-item"><strong>Languages:</strong> Native Mandarin Chinese, Professional English (Bilingual).</div>
+        <div class="skill-item"><strong>Personal Interests:</strong> Avid gamer (800+ hours on Steam), Piano (Passed Level 7, CCOM).</div>
+    </div>
+
+</body>
+</html>
