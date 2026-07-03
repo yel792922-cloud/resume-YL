@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# App runtime data (uploaded reports, sqlite db)
+backend/data/*
+!backend/data/.gitkeep
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# Env / editor / OS
+.env
+.env.*
+.DS_Store
+.idea/
+.vscode/
