@@ -29,7 +29,11 @@ class Settings(BaseSettings):
     ocr_dpi: int = 200
 
     # CORS (frontend dev server)
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    cors_origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://你的Vercel网址.vercel.app",
+]
 
     @property
     def uploads_dir(self) -> Path:
