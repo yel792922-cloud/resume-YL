@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     cors_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://你的Vercel网址.vercel.app",
+    "https://resume-yl.vercel.app/",
 ]
 
     @property
