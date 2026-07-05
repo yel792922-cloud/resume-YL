@@ -106,6 +106,11 @@ npm run dev                              # http://localhost:5173 (proxies /api â
 
 See [`backend/.env.example`](backend/.env.example) for the full list.
 
+> **Production safeguard:** when a non-SQLite (i.e. production) database is
+> configured, the backend **refuses to start** unless `SECRET_KEY` /
+> `FRA_SECRET_KEY` is set to a non-default value â€” so a forgeable JWT key can't
+> ship by accident. On Render the blueprint auto-generates a stable `SECRET_KEY`.
+
 ### Migrations
 
 ```bash

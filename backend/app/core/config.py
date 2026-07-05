@@ -13,6 +13,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # backend/  (two parents up from app/core/config.py)
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
+# Sentinel dev key; production MUST override it (enforced at startup for non-SQLite).
+DEFAULT_DEV_SECRET = "dev-insecure-secret-change-me-in-production-0123456789"
+
 
 def _normalize_db_url(url: str) -> str:
     """Normalize a database URL to a SQLAlchemy-compatible driver form.
@@ -40,7 +43,7 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite:///{BACKEND_ROOT / 'data' / 'app.db'}"
 
     # Auth — MUST be overridden in production via FRA_SECRET_KEY / SECRET_KEY.
-    secret_key: str = "dev-insecure-secret-change-me-in-production-0123456789"
+    secret_key: str = DEFAULT_DEV_SECRET
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
     jwt_algorithm: str = "HS256"
 
@@ -55,7 +58,9 @@ class Settings(BaseSettings):
     # Parsing / OCR
     enable_ocr: bool = True            # try OCR for scanned pages if backend available
     ocr_languages: str = "chi_sim+eng"  # tesseract language packs
-    ocr_dpi: int = 200
+    # Rasterization DPI. Kept conservative (150) so a page image stays ~4 MB and
+    # OCR fits comfortably in a 512 MB free-tier instance. Raise for accuracy.
+    ocr_dpi: int = 150
 
     # CORS (frontend origins allowed for direct/browser access)
     cors_origins: list[str] = [
@@ -80,6 +85,10 @@ class Settings(BaseSettings):
     @property
     def is_sqlite(self) -> bool:
         return self.database_url.startswith("sqlite")
+
+    @property
+    def using_default_secret(self) -> bool:
+        return self.secret_key == DEFAULT_DEV_SECRET
 
     @property
     def max_upload_bytes(self) -> int:

@@ -22,6 +22,10 @@ services:
         value: "true"
       - key: FRA_OCR_LANGUAGES
         value: "chi_sim+eng"
+      # Conservative DPI for the 512 MB free tier (raise for accuracy on a
+      # larger instance). Keep uploads modest so OCR stays within memory.
+      - key: FRA_OCR_DPI
+        value: "150"
       - key: FRA_MAX_UPLOADS_PER_USER
         value: "10"
       - key: FRA_MAX_UPLOAD_MB
