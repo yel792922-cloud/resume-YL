@@ -6,7 +6,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import routes_compare, routes_documents, routes_export, routes_search
+from app.api import (
+    routes_analysis,
+    routes_compare,
+    routes_documents,
+    routes_export,
+    routes_search,
+)
 from app.auth import routes_auth
 from app.core.config import get_settings
 from app.core.db import init_db
@@ -88,3 +94,4 @@ app.include_router(routes_documents.router)
 app.include_router(routes_search.router)
 app.include_router(routes_compare.router)
 app.include_router(routes_export.router)
+app.include_router(routes_analysis.router)

@@ -170,3 +170,63 @@ class SnapshotSummary(BaseModel):
 class SnapshotDetail(SnapshotSummary):
     facts: list[FactOut] = []
     summary: ReportSummary | None = None
+
+
+# ---------------------------- v3: data cleaning ----------------------------
+class CleaningAuditEntry(BaseModel):
+    action: str                      # "removed" | "deduped" | "normalized"
+    reason: str
+    fact_id: int | None = None
+    concept_id: str | None = None
+    metric_name: str | None = None
+    snippet: str | None = None
+    detail: str | None = None
+    confidence: float | None = None
+
+
+class CleanedFactsResponse(BaseModel):
+    document_id: str
+    stats: dict[str, int]            # {retained, removed, deduped, normalized}
+    retained: list[FactOut] = []     # cleaned, source-traceable facts
+    audit: list[CleaningAuditEntry] = []
+
+
+# ---------------------------- v3: scenario forecasting ----------------------------
+class ScenarioForecast(BaseModel):
+    scenario: str                    # base | bull | bear
+    period: str                      # forecasted period label
+    predicted_value: float
+    annualized_value: float | None = None
+    growth_pct: float | None = None  # growth % (value) or pp change (margin)
+    direction: str                   # up | down | flat
+    confidence: str                  # low | medium | high
+    assumptions: list[str] = []
+    explanation: str
+
+
+class ForecastMetric(BaseModel):
+    concept_id: str
+    metric_name: str
+    metric_label: str | None = None
+    unit: str | None = None
+    is_percent: bool = False
+    current_value: float
+    prior_value: float | None = None
+    observed_growth_pct: float | None = None
+    source: SourceRef | None = None
+    scenarios: list[ScenarioForecast] = []
+
+
+class ForecastResponse(BaseModel):
+    document_id: str
+    company_name: str | None = None
+    report_type: str
+    base_period: str | None = None
+    forecast_period: str
+    cadence: str                     # quarter | half-year | year
+    annualized: bool = False         # whether annualized_value is provided
+    growth_override_pct: float | None = None
+    disclaimer: str
+    metrics: list[ForecastMetric] = []
+    guidance: list[SummaryHighlight] = []
+    key_risks: list[SummaryHighlight] = []

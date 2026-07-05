@@ -162,6 +162,13 @@ version_id`
 
 ## Status
 
+**v3.0** adds two read-only analytics layers (backend-only): a **data-cleaning**
+pass that de-noises/de-dupes/normalizes extracted facts with a full audit trail
+(`GET /api/documents/{id}/cleaned`), and **period-aware scenario forecasting**
+(base/bull/bear, ephemeral, source-referenced, optional growth override)
+(`GET /api/documents/{id}/forecast`). Both are additive and don't change
+existing endpoints. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#v30--data-cleaning--scenario-forecasting).
+
 **v0.2.0** — multi-user, source-traceable financial report analysis:
 accounts + per-user libraries, versioned parse history, PostgreSQL + Alembic,
 per-user raw-file retention, and upload size/preprocessing safeguards — on top
