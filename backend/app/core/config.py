@@ -62,7 +62,10 @@ class Settings(BaseSettings):
     # OCR fits comfortably in a 512 MB free-tier instance. Raise for accuracy.
     ocr_dpi: int = 150
 
-    # CORS (frontend origins allowed for direct/browser access)
+    # CORS (frontend origins allowed for direct/browser access).
+    # Includes the production Vercel origin (main added it too); comma-separated
+    # FRA_CORS_ORIGINS can override. No trailing slash — browsers send the bare
+    # origin, so a trailing slash would fail to match.
     cors_origins: list[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
