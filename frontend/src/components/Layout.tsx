@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useLang } from "../lib/context";
+import { useAuth } from "../lib/auth";
 import { t } from "../lib/i18n";
 import type { ReactNode } from "react";
 
@@ -15,6 +16,7 @@ const NAV: { to: string; key: Parameters<typeof t>[0]; ico: string }[] = [
 
 export function Layout({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) {
   const { lang, setLang } = useLang();
+  const { user, logout } = useAuth();
   return (
     <div className="app">
       <aside className="sidebar">
@@ -32,10 +34,18 @@ export function Layout({ title, actions, children }: { title: string; actions?: 
           </NavLink>
         ))}
         <div className="spacer" />
+        {user && (
+          <div className="user-box">
+            <div className="user-email" title={user.email}>{user.email}</div>
+            <button className="btn ghost sm" style={{ color: "#b7c2d4" }} onClick={logout}>
+              {lang === "zh" ? "退出登录" : "Sign out"}
+            </button>
+          </div>
+        )}
         <div className="foot">
           {t("traceEvery", lang)}
           <br />
-          v0.1 · MVP
+          v0.2 · multi-user
         </div>
       </aside>
       <main className="main">

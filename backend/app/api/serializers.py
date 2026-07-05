@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models.document import Document, Page
 from app.models.fact import ExtractedFact
+from app.models.snapshot import ParseSnapshot
 from app.models.schemas import DocumentSummary, FactOut, PageOut, SourceRef
 
 
@@ -40,9 +41,15 @@ def fact_to_out(f: ExtractedFact) -> FactOut:
 
 
 def document_to_summary(db: Session, d: Document) -> DocumentSummary:
-    count = (
+    fact_count = (
         db.query(func.count(ExtractedFact.id))
         .filter(ExtractedFact.document_id == d.id)
+        .scalar()
+        or 0
+    )
+    version_count = (
+        db.query(func.count(ParseSnapshot.id))
+        .filter(ParseSnapshot.document_id == d.id)
         .scalar()
         or 0
     )
@@ -59,7 +66,9 @@ def document_to_summary(db: Session, d: Document) -> DocumentSummary:
         status=d.status,
         status_detail=d.status_detail,
         is_favorite=d.is_favorite,
-        fact_count=int(count),
+        raw_available=d.raw_available,
+        fact_count=int(fact_count),
+        version_count=int(version_count),
         created_at=d.created_at,
     )
 

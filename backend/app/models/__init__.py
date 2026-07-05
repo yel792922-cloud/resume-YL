@@ -7,6 +7,8 @@ which carries full source traceability for every extracted value.
 
 from app.models.document import Document, DocumentStatus, Page, ReportType
 from app.models.fact import ExtractedFact, FactCategory
+from app.models.snapshot import ParseSnapshot
+from app.models.user import User
 
 __all__ = [
     "Document",
@@ -15,4 +17,6 @@ __all__ = [
     "ReportType",
     "ExtractedFact",
     "FactCategory",
+    "ParseSnapshot",
+    "User",
 ]

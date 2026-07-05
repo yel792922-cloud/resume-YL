@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { api } from "../api/client";
@@ -13,6 +13,14 @@ export function Upload() {
   const [period, setPeriod] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [maxMb, setMaxMb] = useState<number | null>(null);
+
+  useEffect(() => {
+    api.health().then((h) => setMaxMb(h.max_upload_mb)).catch(() => {});
+  }, []);
+
+  // Client-side guard so oversized files fail fast with a clear message.
+  const tooBig = !!(file && maxMb && file.size > maxMb * 1024 * 1024);
 
   const submit = async () => {
     if (!file) return;
@@ -22,7 +30,7 @@ export function Upload() {
       const doc = await api.uploadDocument(file, company || undefined, period || undefined);
       nav(`/reports/${doc.id}`);
     } catch (e) {
-      setError(String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -50,7 +58,20 @@ export function Upload() {
           <div style={{ marginTop: 8 }}>
             {file ? <strong>{file.name}</strong> : lang === "zh" ? "点击选择 PDF 文件（支持中英文 / 扫描件）" : "Choose a PDF (Chinese / English / scanned)"}
           </div>
+          {file && (
+            <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{(file.size / 1_048_576).toFixed(1)} MB</div>
+          )}
+          {maxMb && (
+            <div className="muted" style={{ fontSize: 11, marginTop: 6 }}>
+              {lang === "zh" ? `单文件上限 ${maxMb} MB` : `Max file size ${maxMb} MB`}
+            </div>
+          )}
         </label>
+        {tooBig && (
+          <div className="pill red" style={{ marginBottom: 12, whiteSpace: "normal" }}>
+            {lang === "zh" ? `文件超过 ${maxMb} MB 上限` : `File exceeds the ${maxMb} MB limit`}
+          </div>
+        )}
 
         <div className="grid" style={{ gridTemplateColumns: "1fr 1fr", marginBottom: 16 }}>
           <div>
@@ -65,7 +86,7 @@ export function Upload() {
 
         {error && <div className="pill red" style={{ marginBottom: 12 }}>{error}</div>}
 
-        <button className="btn primary" disabled={!file || busy} onClick={submit}>
+        <button className="btn primary" disabled={!file || busy || tooBig} onClick={submit}>
           {busy ? (lang === "zh" ? "解析中…" : "Analyzing…") : lang === "zh" ? "开始解析" : "Analyze"}
         </button>
         <div className="muted" style={{ fontSize: 12, marginTop: 14 }}>

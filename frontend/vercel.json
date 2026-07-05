@@ -4,6 +4,10 @@
     {
       "source": "/api/:path*",
       "destination": "https://resume-yl.onrender.com/api/:path*"
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "destination": "/index.html"
     }
   ]
 }

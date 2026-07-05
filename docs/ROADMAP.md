@@ -24,10 +24,36 @@ Implemented priorities 1–7:
 Verified end to end: `pytest` (backend pipeline), production `tsc`/Vite build,
 and a live uvicorn + Vite run with UI screenshots of the source-jump flow.
 
-## 🔜 Next (priority 8: polish & advanced analytics)
+## ✅ v0.2.0 (done) — multi-user & production storage
 
-- **OCR in production** — ship the tesseract backend image (`chi_sim`, `eng`);
-  add layout-aware OCR for tables in scanned reports.
+- **Authentication** — email/password accounts, bcrypt + JWT bearer tokens.
+- **Per-user ownership** — `Document.user_id`; every list/detail/search/
+  compare/export/history endpoint is owner-scoped (404 on foreign ids).
+- **Parse history** — immutable versioned `ParseSnapshot` (facts + summary),
+  survives raw-PDF cleanup; History tab in the report UI.
+- **PostgreSQL** — env-driven `DATABASE_URL` (psycopg), Alembic migrations,
+  SQLite retained for local/tests.
+- **Retention** — `FRA_MAX_UPLOADS_PER_USER` cap with safe raw-file cleanup;
+  structured data preserved.
+- **Upload safety** — `FRA_MAX_UPLOAD_MB` hard limit (413) + optional pikepdf
+  compression with fallback.
+- **Deploy config** — `render.yaml` (Postgres + web) and `frontend/vercel.json`
+  (rewrites `/api` → Render, SPA fallback).
+
+Verified: 17 backend tests (auth, isolation, retention, size limits, full
+pipeline), production Vite build, and a live authenticated run.
+
+## ✅ OCR in production (done)
+
+- Backend ships as a **Docker image** ([`backend/Dockerfile`](../backend/Dockerfile))
+  bundling Tesseract (`eng` + `chi_sim`) and Poppler.
+- Scanned/image pages are rasterized and OCR'd; words are grouped into lines
+  from Tesseract geometry so the text extractor recovers metrics with page +
+  bounding-box traceability. Verified on a bilingual scanned fixture.
+- Stays optional (`FRA_ENABLE_OCR`) with graceful fallback when the toolchain
+  is absent. Layout-aware OCR **table** reconstruction is still future work.
+
+## 🔜 Next (polish & advanced analytics)
 - **Multi-column periods** — persist every period column per fact (not just the
   current period) for richer in-document trend rows.
 - **Exact table-cell geometry** — replace the uniform cell-bbox approximation

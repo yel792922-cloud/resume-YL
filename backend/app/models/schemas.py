@@ -3,10 +3,35 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.models.document import DocumentStatus, ReportType
 from app.models.fact import FactCategory
+
+
+# ---------------------------- Auth ----------------------------
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8, max_length=128)
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    created_at: datetime
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserOut
 
 
 class SourceRef(BaseModel):
@@ -55,7 +80,9 @@ class DocumentSummary(BaseModel):
     status: DocumentStatus
     status_detail: str | None
     is_favorite: bool
+    raw_available: bool = True         # False once retention removed the raw PDF
     fact_count: int = 0
+    version_count: int = 0             # number of historical parse snapshots
     created_at: datetime
 
 
@@ -123,3 +150,23 @@ class CompareResponse(BaseModel):
     columns: list[str]               # period labels or company names
     document_ids: list[str]
     rows: list[CompareRow]
+
+
+# ---------------------------- Parse history ----------------------------
+class SnapshotSummary(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    document_id: str
+    version: int
+    engine_version: str
+    fact_count: int
+    page_count: int
+    language: str
+    note: str | None
+    created_at: datetime
+
+
+class SnapshotDetail(SnapshotSummary):
+    facts: list[FactOut] = []
+    summary: ReportSummary | None = None

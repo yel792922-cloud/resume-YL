@@ -1,5 +1,17 @@
 // Types mirroring the backend Pydantic schemas (app/models/schemas.py).
 
+export interface User {
+  id: number;
+  email: string;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: User;
+}
+
 export type ReportType = "annual" | "interim" | "quarterly" | "prospectus" | "other";
 export type DocumentStatus = "uploaded" | "parsing" | "extracting" | "ready" | "failed";
 export type FactCategory =
@@ -51,12 +63,31 @@ export interface DocumentSummary {
   status: DocumentStatus;
   status_detail: string | null;
   is_favorite: boolean;
+  raw_available: boolean;
   fact_count: number;
+  version_count: number;
   created_at: string;
 }
 
 export interface DocumentDetail extends DocumentSummary {
   pages: number[];
+}
+
+export interface SnapshotSummary {
+  id: number;
+  document_id: string;
+  version: number;
+  engine_version: string;
+  fact_count: number;
+  page_count: number;
+  language: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface SnapshotDetail extends SnapshotSummary {
+  facts: Fact[];
+  summary: ReportSummary | null;
 }
 
 export interface Word {
