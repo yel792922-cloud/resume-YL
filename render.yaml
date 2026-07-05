@@ -1,0 +1,28 @@
+# Render blueprint for the Financial Report Analyzer backend (v0.2.0).
+# Provisions a free Postgres instance and a web service that runs migrations
+# on deploy. The frontend is deployed separately on Vercel (see frontend/).
+services:
+  - type: web
+    name: resume-yl
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -e '.[postgres,preprocess]'
+    # Run migrations, then start the API. create_all also runs on startup as an
+    # idempotent safety net, so a fresh DB works even before migrations exist.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: resume-yl-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FRA_MAX_UPLOADS_PER_USER
+        value: "10"
+      - key: FRA_MAX_UPLOAD_MB
+        value: "15"
+
+databases:
+  - name: resume-yl-db
+    plan: free

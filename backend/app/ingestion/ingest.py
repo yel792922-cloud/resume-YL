@@ -66,12 +66,14 @@ def ingest_from_path(
     document_id: str,
     storage_path: str,
     filename: str,
+    user_id: int,
     company_name: str | None = None,
     report_period: str | None = None,
 ) -> Document:
-    """Register + ingest a file already present in the store."""
+    """Register + ingest a file already present in the store, owned by a user."""
     document = Document(
         id=document_id,
+        user_id=user_id,
         filename=filename,
         storage_path=storage_path,
         company_name=company_name,

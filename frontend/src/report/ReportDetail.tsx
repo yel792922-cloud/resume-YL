@@ -5,12 +5,13 @@ import { MetricCard, SourceLink, StatusPill } from "../components/ui";
 import { FactTable } from "./FactTable";
 import { SearchPanel } from "./SearchPanel";
 import { SourceBrowser } from "./SourceBrowser";
+import { HistoryPanel } from "./HistoryPanel";
 import { api } from "../api/client";
 import { useLang, useSource } from "../lib/context";
 import { categoryLabel, reportTypeLabel, t } from "../lib/i18n";
 import type { DocumentDetail, Fact, FactCategory, ReportSummary } from "../types";
 
-type Tab = "overview" | "financials" | "management" | "risks" | "search" | "source";
+type Tab = "overview" | "financials" | "management" | "risks" | "search" | "source" | "history";
 
 export function ReportDetail() {
   const { id = "" } = useParams();
@@ -44,15 +45,19 @@ export function ReportDetail() {
     { key: "risks", label: t("risks", lang) },
     { key: "search", label: t("search", lang) },
     { key: "source", label: t("sourceView", lang) },
+    { key: "history", label: lang === "zh" ? `历史 (${doc.version_count})` : `History (${doc.version_count})` },
   ];
+
+  const exportFile = (fmt: "csv" | "json") =>
+    api.downloadExport(id, fmt, `${(doc.company_name || doc.filename).replace(/\s+/g, "_")}_facts.${fmt}`);
 
   return (
     <Layout
       title={doc.company_name || doc.filename}
       actions={
         <>
-          <a className="btn sm" href={api.exportUrl(id, "csv")}>⬇ CSV</a>
-          <a className="btn sm" href={api.exportUrl(id, "json")}>⬇ JSON</a>
+          <button className="btn sm" onClick={() => exportFile("csv")}>⬇ CSV</button>
+          <button className="btn sm" onClick={() => exportFile("json")}>⬇ JSON</button>
         </>
       }
     >
@@ -63,6 +68,11 @@ export function ReportDetail() {
         <span className="pill gray">{doc.language.toUpperCase()}</span>
         <span className="pill gray">{doc.page_count}p</span>
         <StatusPill status={doc.status} />
+        {!doc.raw_available && (
+          <span className="pill amber" title={lang === "zh" ? "原始 PDF 已按保留策略清理，结构化数据与原文定位仍完整保留" : "Raw PDF removed by retention policy; structured data & source view preserved"}>
+            {lang === "zh" ? "原文件已清理" : "raw cleaned"}
+          </span>
+        )}
         <span className="muted" style={{ fontSize: 12 }}>{facts.length} {lang === "zh" ? "项可追溯数据" : "traceable facts"}</span>
       </div>
 
@@ -153,6 +163,8 @@ export function ReportDetail() {
       {tab === "search" && <div className="card card-pad"><SearchPanel documentId={id} /></div>}
 
       {tab === "source" && <SourceBrowser documentId={id} pages={doc.pages} />}
+
+      {tab === "history" && <HistoryPanel documentId={id} />}
     </Layout>
   );
 }

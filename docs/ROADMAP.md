@@ -24,7 +24,26 @@ Implemented priorities 1–7:
 Verified end to end: `pytest` (backend pipeline), production `tsc`/Vite build,
 and a live uvicorn + Vite run with UI screenshots of the source-jump flow.
 
-## 🔜 Next (priority 8: polish & advanced analytics)
+## ✅ v0.2.0 (done) — multi-user & production storage
+
+- **Authentication** — email/password accounts, bcrypt + JWT bearer tokens.
+- **Per-user ownership** — `Document.user_id`; every list/detail/search/
+  compare/export/history endpoint is owner-scoped (404 on foreign ids).
+- **Parse history** — immutable versioned `ParseSnapshot` (facts + summary),
+  survives raw-PDF cleanup; History tab in the report UI.
+- **PostgreSQL** — env-driven `DATABASE_URL` (psycopg), Alembic migrations,
+  SQLite retained for local/tests.
+- **Retention** — `FRA_MAX_UPLOADS_PER_USER` cap with safe raw-file cleanup;
+  structured data preserved.
+- **Upload safety** — `FRA_MAX_UPLOAD_MB` hard limit (413) + optional pikepdf
+  compression with fallback.
+- **Deploy config** — `render.yaml` (Postgres + web) and `frontend/vercel.json`
+  (rewrites `/api` → Render, SPA fallback).
+
+Verified: 17 backend tests (auth, isolation, retention, size limits, full
+pipeline), production Vite build, and a live authenticated run.
+
+## 🔜 Next (polish & advanced analytics)
 
 - **OCR in production** — ship the tesseract backend image (`chi_sim`, `eng`);
   add layout-aware OCR for tables in scanned reports.

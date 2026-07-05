@@ -78,4 +78,38 @@ React + TypeScript (Vite). A shared `SourceLink` component and a global source
 drawer mean *any* number, anywhere in the UI, is one click from its highlighted
 origin. Screens mirror the product map: Home, Upload, My Reports, Search,
 Comparison, Favorites, Settings; report detail tabs: Overview, Financial
-Metrics, Management, Risks, Search, Source View.
+Metrics, Management, Risks, Search, Source View, History.
+
+---
+
+## v0.2.0 — multi-user, history, production storage
+
+New concerns are added as their own packages, each independent of the
+extraction pipeline so v0.1.0 behavior is unchanged:
+
+| Concern | Module | Notes |
+| --- | --- | --- |
+| Authentication | `app/auth` | bcrypt hashing + stateless JWT bearer tokens; `get_current_user` dependency. Stateless tokens suit the split Vercel/Render deploy (no shared session store). |
+| Document ownership | `app/api/ownership` | `get_owned_document` gate used by every document-scoped route. Returns 404 (not 403) for another user's id so existence never leaks. |
+| Parse history | `app/history` + `ParseSnapshot` | Immutable, versioned JSON snapshot of facts + summary per parse run. |
+| Retention | `app/storage` | Caps raw PDFs per user; clears `storage_path`/`raw_available` but keeps all structured data. |
+| Preprocessing | `app/ingestion/preprocess` | Hard size check + optional lossless `pikepdf` compression, with fallback to the original. |
+
+**Data-model changes:** new `User` and `ParseSnapshot` tables; `Document`
+gains `user_id` (FK, indexed) and `raw_available`, and `storage_path` becomes
+nullable. Schema is managed by **Alembic** (`backend/alembic`); `create_all`
+remains as an idempotent startup safety net.
+
+**Why raw files are disposable.** The source view is reconstructed from each
+page's stored word coordinates (`Page.words_json`), not from the PDF. So
+retention can delete the original file while highlights, click-to-jump, facts,
+and history all keep working — traceability is preserved without unbounded
+raw-file storage on free-tier disk.
+
+**Database URL handling.** `DATABASE_URL` / `FRA_DATABASE_URL` is normalized
+(`postgres://` → `postgresql+psycopg://`). Local dev defaults to SQLite; the
+same code runs on Postgres in production via env config only.
+
+**Auth transport.** The frontend keeps the `/api/*` pattern; Vercel rewrites it
+to Render, so browser calls are same-origin and the JWT travels in the
+`Authorization` header (no cross-site cookies).

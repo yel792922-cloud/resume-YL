@@ -131,6 +131,12 @@ table.fin tr:hover td { background: #fafbfd; }
 .page-highlight { position: absolute; background: rgba(255, 214, 0, .38); border: 1px solid rgba(214, 158, 0, .9); border-radius: 2px; animation: flash 1s ease-in-out; pointer-events: none; }
 @keyframes flash { 0% { background: rgba(255,214,0,.75);} 100% { background: rgba(255,214,0,.38);} }
 
+/* ---------- Auth ---------- */
+.auth-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: linear-gradient(160deg, #0f1b2d 0%, #1b2f4d 100%); }
+.auth-card { width: 100%; max-width: 400px; padding: 30px 28px; }
+.user-box { padding: 8px; border-top: 1px solid rgba(255,255,255,.06); }
+.user-email { font-size: 12px; color: #9fb0c6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 6px; }
+
 /* ---------- Misc ---------- */
 .empty { text-align: center; padding: 60px 20px; color: var(--ink-soft); }
 .snippet { background: #fafbfd; border-left: 3px solid var(--brand); padding: 8px 12px; border-radius: 0 6px 6px 0; font-size: 13px; color: #33404f; }

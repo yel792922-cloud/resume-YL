@@ -38,8 +38,15 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    # Owner — every document belongs to exactly one user (v0.2 multi-user).
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
     filename: Mapped[str] = mapped_column(String(512))
-    storage_path: Mapped[str] = mapped_column(String(1024))
+    # Path to the original PDF. May become NULL after retention cleanup removes
+    # the raw file; structured data (pages, facts, snapshots) is preserved.
+    storage_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    raw_available: Mapped[bool] = mapped_column(default=True)
 
     # Report identity (best-effort at ingest; refined by extraction)
     company_name: Mapped[str | None] = mapped_column(String(256), nullable=True)
@@ -64,11 +71,15 @@ class Document(Base):
         DateTime, default=_utcnow, onupdate=_utcnow
     )
 
+    owner: Mapped["User"] = relationship(back_populates="documents")  # noqa: F821
     pages: Mapped[list["Page"]] = relationship(
         back_populates="document", cascade="all, delete-orphan", order_by="Page.page_number"
     )
     facts: Mapped[list["ExtractedFact"]] = relationship(  # noqa: F821
         back_populates="document", cascade="all, delete-orphan"
+    )
+    snapshots: Mapped[list["ParseSnapshot"]] = relationship(  # noqa: F821
+        back_populates="document", cascade="all, delete-orphan", order_by="ParseSnapshot.version"
     )
 
 

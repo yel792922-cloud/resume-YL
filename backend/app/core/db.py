@@ -24,8 +24,14 @@ class Base(DeclarativeBase):
 
 
 def init_db() -> None:
-    """Create tables. Import models so they register on the metadata."""
-    from app.models import document, fact  # noqa: F401  (registers tables)
+    """Ensure tables exist. Import models so they register on the metadata.
+
+    ``create_all`` is idempotent (``checkfirst=True``) so it is safe to call on
+    every startup: on a fresh database it creates the schema, and on an existing
+    one it is a no-op. For controlled schema *changes* in production, use the
+    Alembic migrations in ``backend/alembic`` (``alembic upgrade head``).
+    """
+    from app.models import document, fact, snapshot, user  # noqa: F401  (registers tables)
 
     Base.metadata.create_all(bind=engine)
 
