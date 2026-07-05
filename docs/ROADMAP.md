@@ -43,10 +43,17 @@ and a live uvicorn + Vite run with UI screenshots of the source-jump flow.
 Verified: 17 backend tests (auth, isolation, retention, size limits, full
 pipeline), production Vite build, and a live authenticated run.
 
-## 🔜 Next (polish & advanced analytics)
+## ✅ OCR in production (done)
 
-- **OCR in production** — ship the tesseract backend image (`chi_sim`, `eng`);
-  add layout-aware OCR for tables in scanned reports.
+- Backend ships as a **Docker image** ([`backend/Dockerfile`](../backend/Dockerfile))
+  bundling Tesseract (`eng` + `chi_sim`) and Poppler.
+- Scanned/image pages are rasterized and OCR'd; words are grouped into lines
+  from Tesseract geometry so the text extractor recovers metrics with page +
+  bounding-box traceability. Verified on a bilingual scanned fixture.
+- Stays optional (`FRA_ENABLE_OCR`) with graceful fallback when the toolchain
+  is absent. Layout-aware OCR **table** reconstruction is still future work.
+
+## 🔜 Next (polish & advanced analytics)
 - **Multi-column periods** — persist every period column per fact (not just the
   current period) for richer in-document trend rows.
 - **Exact table-cell geometry** — replace the uniform cell-bbox approximation

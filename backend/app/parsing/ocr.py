@@ -60,7 +60,11 @@ class TesseractOcrBackend:
             image, lang=settings.ocr_languages, output_type=pytesseract.Output.DICT
         )
         words: list[ParsedWord] = []
-        parts: list[str] = []
+        # Group tokens into text lines using tesseract's block/par/line indices so
+        # the reconstructed text has real line breaks. This lets the downstream
+        # text extractor find "label … number" rows in scanned reports, exactly
+        # as it does for digital PDFs — keeping OCR facts source-traceable.
+        lines: dict[tuple[int, int, int], list[str]] = {}
         n = len(data["text"])
         for i in range(n):
             token = (data["text"][i] or "").strip()
@@ -76,12 +80,15 @@ class TesseractOcrBackend:
                     bottom=(y + h) / height,
                 )
             )
-            parts.append(token)
+            key = (data["block_num"][i], data["par_num"][i], data["line_num"][i])
+            lines.setdefault(key, []).append(token)
+
+        text = "\n".join(" ".join(tokens) for _, tokens in sorted(lines.items()))
         return ParsedPage(
             page_number=page_number,
             width=float(width),
             height=float(height),
-            text=" ".join(parts),
+            text=text,
             words=words,
             source="ocr",
         )

@@ -113,3 +113,12 @@ same code runs on Postgres in production via env config only.
 **Auth transport.** The frontend keeps the `/api/*` pattern; Vercel rewrites it
 to Render, so browser calls are same-origin and the JWT travels in the
 `Authorization` header (no cross-site cookies).
+
+**OCR deployment.** The backend ships as a Docker image
+(`backend/Dockerfile`) bundling Tesseract (`eng` + `chi_sim`) and Poppler, so
+scanned English/Chinese reports are OCR-able in production. The parse
+orchestrator still tries digital extraction first and only routes image pages
+to OCR; the `OcrBackend` protocol keeps it optional with a null fallback. OCR
+tokens are grouped into lines from Tesseract's block/line indices, so the same
+text extractor — and the same page + bounding-box traceability — applies to
+scans and digital PDFs alike.

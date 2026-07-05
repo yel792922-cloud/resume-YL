@@ -120,11 +120,33 @@ database is usable even before migrations are applied.
 ### Deployment
 
 - **Backend (Render):** [`render.yaml`](render.yaml) provisions free Postgres +
-  a web service; start command runs `alembic upgrade head` then uvicorn.
-  Install with the `postgres` extra: `pip install -e '.[postgres,preprocess]'`.
+  a **Docker** web service built from [`backend/Dockerfile`](backend/Dockerfile).
+  The image bundles the OCR toolchain (Tesseract + `eng`/`chi_sim` language packs
+  + Poppler); on start it runs `alembic upgrade head` then uvicorn.
 - **Frontend (Vercel):** [`frontend/vercel.json`](frontend/vercel.json) rewrites
   `/api/*` to the Render backend, keeping the `/api` contract and making browser
   requests same-origin.
+
+### OCR for scanned PDFs (English + Simplified Chinese)
+
+Digital PDFs are parsed directly; **only image/scanned pages** fall back to OCR,
+and OCR is optional (`FRA_ENABLE_OCR`, default on). When enabled, scanned
+reports are rasterized (Poppler) and read with Tesseract using
+`FRA_OCR_LANGUAGES` (default `chi_sim+eng`), producing positioned words so
+OCR-derived facts stay **source-traceable** (page + bounding box) just like
+digital ones. If the toolchain isn't present, the app degrades gracefully:
+scanned pages ingest without crashing and are flagged `is_scanned`.
+
+Production ships the toolchain in the Docker image. To run OCR **locally**:
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-chi-sim poppler-utils
+# macOS
+brew install tesseract tesseract-lang poppler
+
+cd backend && pip install -e '.[ocr]'    # pytesseract, pdf2image, Pillow
+```
 
 ## Data model — every extracted fact carries
 
@@ -139,5 +161,6 @@ version_id`
 accounts + per-user libraries, versioned parse history, PostgreSQL + Alembic,
 per-user raw-file retention, and upload size/preprocessing safeguards — on top
 of the v0.1.0 pipeline (upload → parse → extract with traceability →
-view/search/compare/export). OCR for scanned PDFs remains a pluggable interface
-with graceful fallback. See the roadmap for what's next.
+view/search/compare/export). OCR for scanned English & Simplified-Chinese PDFs
+ships in the production Docker image (Tesseract + Poppler), stays optional, and
+falls back gracefully. See the roadmap for what's next.
