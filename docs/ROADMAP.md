@@ -53,9 +53,22 @@ pipeline), production Vite build, and a live authenticated run.
 - Stays optional (`FRA_ENABLE_OCR`) with graceful fallback when the toolchain
   is absent. Layout-aware OCR **table** reconstruction is still future work.
 
+## ✅ v3.0 (done) — data cleaning & scenario forecasting
+
+- **Data-cleaning layer** (`app/cleaning/`) — non-destructive, read-time pass
+  that drops noise (page numbers, headers/footers, disclaimers, OCR garbage),
+  de-duplicates, and normalizes units, with a full audit trail; numeric facts
+  are never dropped and traceability is preserved. `GET /documents/{id}/cleaned`.
+- **Scenario forecasting** (`app/forecasting/`) — period-aware, heuristic,
+  ephemeral base/bull/bear projections from the report's own prior→current
+  trend, with an optional growth override; every metric cites its source.
+  `GET /documents/{id}/forecast`. Backend-only (no forecast UI yet).
+
 ## 🔜 Next (polish & advanced analytics)
+- **Forecast UI** — a frontend Forecast tab consuming `/forecast` (deferred).
 - **Multi-column periods** — persist every period column per fact (not just the
-  current period) for richer in-document trend rows.
+  current period) for richer in-document trend rows, giving forecasting a longer
+  history than the single prior column.
 - **Exact table-cell geometry** — replace the uniform cell-bbox approximation
   with pdfplumber's per-cell coordinates for pixel-accurate highlights.
 - **Async ingestion** — move parse+extract to a background task/queue with live

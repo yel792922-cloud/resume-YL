@@ -122,3 +122,38 @@ to OCR; the `OcrBackend` protocol keeps it optional with a null fallback. OCR
 tokens are grouped into lines from Tesseract's block/line indices, so the same
 text extractor — and the same page + bounding-box traceability — applies to
 scans and digital PDFs alike.
+
+---
+
+## v3.0 — data cleaning & scenario forecasting
+
+Two additive, **read-only** analytics layers. Neither touches the extraction
+pipeline, the data model, or existing endpoints, so production behavior is
+unchanged.
+
+**Data cleaning (`app/cleaning/`).** A non-destructive pass over a document's
+persisted facts: `clean_facts(facts) -> CleanResult(retained, audit,
+normalized_units)`. It drops low-value noise (page numbers, headers/footers,
+disclaimers, OCR garbage, low-information rows), de-duplicates identical facts
+(keeping the highest-confidence instance), and normalizes unit notation — while
+**never** dropping numeric concept facts and keeping every retained fact's
+page/snippet/bbox/table-cell reference. Every change is recorded as an audit
+entry (`action`, `reason`, `fact_id`, `detail`, `confidence`). Rules and knobs
+live in `app/cleaning/rules.py` (a `CleaningConfig` dataclass) for easy tuning.
+Exposed at `GET /api/documents/{id}/cleaned`.
+
+**Scenario forecasting (`app/forecasting/`).** Lightweight, heuristic,
+period-aware, and **ephemeral** (no table, computed on request). For one report
+it recovers each key metric's prior-period value from the fact's own row snippet
+(`"Revenue | 6,096.9 | 5,626.5"`), computes the observed period-over-period
+trend, and projects the **next** period at the report's cadence
+(quarterly→quarter, half-year→half, annual→year; optional annualized view).
+Three scenarios — base (continue the trend), bull (stronger), bear (weaker) —
+with an optional user growth override. Value metrics grow multiplicatively;
+margins move additively in percentage points. Each metric cites its source fact;
+guidance and risk facts are surfaced as qualitative context; a disclaimer marks
+outputs as analytical estimates. Exposed at
+`GET /api/documents/{id}/forecast`.
+
+Both endpoints are owner-scoped via the same `get_owned_document` guard and
+computed from cleaned facts, so forecasting benefits from cleaning automatically.
