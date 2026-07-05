@@ -49,6 +49,47 @@ export const UI: Record<string, Pair> = {
     zh: "每一个数据都可追溯到原文位置",
     en: "Every number traces back to its source",
   },
+  retry: { zh: "重试", en: "Retry" },
+  loadFailed: { zh: "加载失败", en: "Failed to load" },
+
+  // Data quality (cleaning)
+  dataQuality: { zh: "数据质量", en: "Data Quality" },
+  totalExtracted: { zh: "提取总数", en: "Total extracted" },
+  retained: { zh: "保留", en: "Retained" },
+  filtered: { zh: "已过滤", en: "Filtered" },
+  cleaningRate: { zh: "清洗比例", en: "Cleaning rate" },
+  normalized: { zh: "已规范化", en: "Normalized" },
+  filteredItems: { zh: "被过滤的条目", en: "Filtered items" },
+  reason: { zh: "原因", en: "Reason" },
+  showAll: { zh: "展开全部", en: "Show all" },
+  showLess: { zh: "收起", en: "Show less" },
+  noNoise: { zh: "未发现噪声，所有事实均已保留", en: "No noise filtered — all facts retained" },
+  cleaningNote: {
+    zh: "清洗为只读操作，不会删除已存储数据；保留项均可追溯原文。",
+    en: "Cleaning is read-only — it never deletes stored data; every retained fact stays source-traceable.",
+  },
+
+  // Scenario forecast
+  forecast: { zh: "情景预测", en: "Scenario Forecast" },
+  scenarioBase: { zh: "基准", en: "Base" },
+  scenarioBull: { zh: "乐观", en: "Bull" },
+  scenarioBear: { zh: "悲观", en: "Bear" },
+  horizon: { zh: "预测区间", en: "Horizon" },
+  expectedTrend: { zh: "预期趋势", en: "Expected trend" },
+  assumptions: { zh: "关键假设", en: "Key assumptions" },
+  supportingMetrics: { zh: "支撑指标", en: "Supporting metrics" },
+  sourceEvidence: { zh: "原文依据", en: "Source evidence" },
+  keyRisks: { zh: "关键风险", en: "Key risks" },
+  managementGuidance: { zh: "管理层指引", en: "Management guidance" },
+  current: { zh: "当前", en: "Current" },
+  annualizedView: { zh: "年化", en: "Annualized" },
+  growthOverride: { zh: "自定义增长率 (%)", en: "Growth override (%)" },
+  apply: { zh: "应用", en: "Apply" },
+  reset: { zh: "重置", en: "Reset" },
+  forecastDisclaimer: {
+    zh: "这些是基于历史趋势的情景分析估算，并非保证性预测，不构成投资建议。",
+    en: "These are scenario-based analytical estimates from historical trends — not guaranteed predictions or investment advice.",
+  },
 };
 
 export function t(key: keyof typeof UI, lang: Lang, vars?: Record<string, string | number>): string {

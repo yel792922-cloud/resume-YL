@@ -1,7 +1,9 @@
+import { type ReactNode, useState } from "react";
 import { useSource } from "../lib/context";
 import { useLang } from "../lib/context";
+import { t } from "../lib/i18n";
 import { confidenceTier, factValueWithUnit } from "../lib/format";
-import type { DocumentStatus, Fact, SourceRef } from "../types";
+import type { ConfidenceLevel, DocumentStatus, Fact, SourceRef } from "../types";
 
 /** A clickable evidence chip → opens the source drawer with highlight. */
 export function SourceLink({
@@ -32,6 +34,82 @@ export function Confidence({ score }: { score: number }) {
       <span className="dot" />
       {(score * 100).toFixed(0)}%
     </span>
+  );
+}
+
+const LEVEL_LABEL: Record<ConfidenceLevel, { zh: string; en: string }> = {
+  high: { zh: "高", en: "High" },
+  medium: { zh: "中", en: "Medium" },
+  low: { zh: "低", en: "Low" },
+};
+
+/** Confidence badge for qualitative levels (forecast). Reuses the .conf styles. */
+export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
+  const { lang } = useLang();
+  return (
+    <span className={`conf ${level}`} title="confidence" aria-label={`Confidence: ${LEVEL_LABEL[level].en}`}>
+      <span className="dot" />
+      {LEVEL_LABEL[level][lang]}
+    </span>
+  );
+}
+
+/** Loading / error / empty wrapper so panels handle async states consistently. */
+export function PanelStates({
+  loading,
+  error,
+  empty,
+  emptyText,
+  onRetry,
+  children,
+}: {
+  loading: boolean;
+  error: string | null;
+  empty?: boolean;
+  emptyText?: string;
+  onRetry?: () => void;
+  children: ReactNode;
+}) {
+  const { lang } = useLang();
+  if (loading) return <div className="center"><div className="spinner" role="status" aria-label="Loading" /></div>;
+  if (error)
+    return (
+      <div className="card empty">
+        <div style={{ marginBottom: 10 }}>⚠ {t("loadFailed", lang)}</div>
+        <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>{error}</div>
+        {onRetry && <button className="btn sm" onClick={onRetry}>{t("retry", lang)}</button>}
+      </div>
+    );
+  if (empty) return <div className="card empty">{emptyText ?? t("noData", lang)}</div>;
+  return <>{children}</>;
+}
+
+/** A small accessible collapsible for long/secondary content. */
+export function Collapsible({
+  title,
+  count,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  count?: number;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        className="btn ghost sm"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        style={{ padding: "4px 6px" }}
+      >
+        <span aria-hidden style={{ display: "inline-block", width: 12 }}>{open ? "▾" : "▸"}</span>
+        {title}{count != null ? ` (${count})` : ""}
+      </button>
+      {open && <div style={{ marginTop: 8 }}>{children}</div>}
+    </div>
   );
 }
 
