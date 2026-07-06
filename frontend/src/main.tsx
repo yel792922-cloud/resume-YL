@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AppProvider } from "./lib/context";
+import { ModeProvider } from "./lib/mode";
 import { AuthProvider, useAuth } from "./lib/auth";
 import { Home } from "./screens/Home";
 import { Upload } from "./screens/Upload";
@@ -37,9 +38,11 @@ function Gate() {
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <AppProvider>
-      <AuthProvider>
-        <Gate />
-      </AuthProvider>
+      <ModeProvider>
+        <AuthProvider>
+          <Gate />
+        </AuthProvider>
+      </ModeProvider>
     </AppProvider>
   </React.StrictMode>
 );

@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from app.cleaning import clean_facts
+from app.analysis import document_facts
 from app.models.document import Document
 from app.models.fact import ExtractedFact, FactCategory
 from app.normalization.concepts import concept_by_id
@@ -56,10 +56,8 @@ def _mentions_concept(fact: ExtractedFact, concept_ids: list[str]) -> bool:
     return False
 
 
-def gather(db: Session, document: Document, qi: QuestionIntent, question: str) -> Retrieved:
-    pool = clean_facts(
-        db.query(ExtractedFact).filter(ExtractedFact.document_id == document.id).all()
-    ).retained
+def gather(db: Session, document: Document, qi: QuestionIntent, question: str, mode: str = "clean") -> Retrieved:
+    pool = document_facts(db, document, mode)
     best = _best_by_concept(pool)
 
     concept_facts = [best[c] for c in qi.concepts if c in best]

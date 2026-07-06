@@ -155,6 +155,7 @@ export interface CompareRow {
 
 export interface CompareResponse {
   dimension: "period" | "company";
+  mode: string;
   columns: string[];
   document_ids: string[];
   rows: CompareRow[];
@@ -208,10 +209,16 @@ export interface ForecastMetric {
   scenarios: ScenarioForecast[];
 }
 
+export interface ScenarioAssumptions {
+  scenario: string;
+  external_factors: string[];
+}
+
 export interface ForecastResponse {
   document_id: string;
   company_name: string | null;
   report_type: string;
+  mode: string;
   base_period: string | null;
   forecast_period: string;
   cadence: string;
@@ -221,6 +228,8 @@ export interface ForecastResponse {
   metrics: ForecastMetric[];
   guidance: SummaryHighlight[];
   key_risks: SummaryHighlight[];
+  external_assumptions: ScenarioAssumptions[];
+  external_note: string | null;
 }
 
 // ---- v4: evidence-based Q&A ----

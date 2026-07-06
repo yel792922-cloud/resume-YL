@@ -1,13 +1,14 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import { MetricCard, SourceLink, StatusPill } from "../components/ui";
+import { MetricCard, ModeToggle, SourceLink, StatusPill } from "../components/ui";
 import { FactTable } from "./FactTable";
 import { SearchPanel } from "./SearchPanel";
 import { SourceBrowser } from "./SourceBrowser";
 import { HistoryPanel } from "./HistoryPanel";
 import { api } from "../api/client";
 import { useLang, useSource } from "../lib/context";
+import { useMode } from "../lib/mode";
 import { categoryLabel, reportTypeLabel, t } from "../lib/i18n";
 import type { DocumentDetail, Fact, FactCategory, ReportSummary } from "../types";
 
@@ -23,6 +24,7 @@ type Tab =
 export function ReportDetail() {
   const { id = "" } = useParams();
   const { lang } = useLang();
+  const { mode } = useMode();
   const { open } = useSource();
   const [doc, setDoc] = useState<DocumentDetail | null>(null);
   const [facts, setFacts] = useState<Fact[]>([]);
@@ -60,14 +62,16 @@ export function ReportDetail() {
 
   const lazyFallback = <div className="center"><div className="spinner" role="status" aria-label="Loading" /></div>;
 
-  const exportFile = (fmt: "csv" | "json") =>
-    api.downloadExport(id, fmt, `${(doc.company_name || doc.filename).replace(/\s+/g, "_")}_facts.${fmt}`);
+  const exportFile = (fmt: "csv" | "json" | "xlsx") =>
+    api.downloadExport(id, fmt, `${(doc.company_name || doc.filename).replace(/\s+/g, "_")}_facts.${fmt}`, mode);
 
   return (
     <Layout
       title={doc.company_name || doc.filename}
       actions={
         <>
+          <ModeToggle />
+          <button className="btn sm" onClick={() => exportFile("xlsx")}>⬇ Excel</button>
           <button className="btn sm" onClick={() => exportFile("csv")}>⬇ CSV</button>
           <button className="btn sm" onClick={() => exportFile("json")}>⬇ JSON</button>
         </>

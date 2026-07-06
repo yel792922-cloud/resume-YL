@@ -18,6 +18,7 @@ router = APIRouter(prefix="/api/compare", tags=["compare"])
 def compare(
     document_ids: list[str] = Query(..., description="Two or more document ids"),
     dimension: str = Query("period", pattern="^(period|company)$"),
+    mode: str = Query("raw", pattern="^(raw|clean)$", description="Compare raw or cleaned facts"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -31,4 +32,4 @@ def compare(
         if doc is None or doc.user_id != user.id:
             raise HTTPException(status_code=404, detail=f"Document not found: {did}")
         docs.append(doc)
-    return compare_documents(db, docs, dimension=dimension)
+    return compare_documents(db, docs, dimension=dimension, mode=mode)

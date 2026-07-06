@@ -55,6 +55,7 @@ def get_forecast(
     ),
     value_delta_pp: float | None = Query(None, ge=0, le=200, description="Bull/bear spread for value metrics (growth pp)"),
     margin_delta_pp: float | None = Query(None, ge=0, le=100, description="Bull/bear spread for margin metrics (pp)"),
+    mode: str = Query("clean", pattern="^(raw|clean)$", description="Forecast from raw or cleaned facts"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -65,4 +66,5 @@ def get_forecast(
         growth_override_pct=growth_override_pct,
         value_delta_pp=value_delta_pp,
         margin_delta_pp=margin_delta_pp,
+        mode=mode,
     )

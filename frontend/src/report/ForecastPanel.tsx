@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { ConfidenceBadge, Collapsible, PanelStates, SourceLink } from "../components/ui";
 import { api } from "../api/client";
 import { useLang } from "../lib/context";
+import { useMode } from "../lib/mode";
 import { useAsync } from "../lib/async";
 import { t, type Lang } from "../lib/i18n";
 import type {
@@ -89,11 +90,12 @@ function ScenarioCard({ data, name }: { data: ForecastResponse; name: ScenarioNa
 /** Scenario Forecast: base/bull/bear with scannable metrics and source evidence. */
 export function ForecastPanel({ documentId }: { documentId: string }) {
   const { lang } = useLang();
+  const { mode } = useMode();
   const [override, setOverride] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const { data, loading, error, reload } = useAsync(
-    () => api.getForecast(documentId, override),
-    [documentId, override],
+    () => api.getForecast(documentId, override, mode),
+    [documentId, override, mode],
   );
 
   const empty = useMemo(() => !!data && data.metrics.length === 0, [data]);
@@ -212,6 +214,32 @@ export function ForecastPanel({ documentId }: { documentId: string }) {
                   </ul>
                 </Collapsible>
               )}
+            </div>
+          )}
+
+          {/* External scenario assumptions — clearly labelled as assumptions, not facts. */}
+          {data.external_assumptions.length > 0 && (
+            <div className="card card-pad" style={{ display: "grid", gap: 10 }}>
+              <p className="section-title" style={{ margin: 0 }}>{t("externalFactors", lang)}</p>
+              <div className="pill amber" role="note" style={{ whiteSpace: "normal", lineHeight: 1.5, padding: "8px 12px", alignSelf: "start" }}>
+                ⚠ {data.external_note || t("externalFactorsNote", lang)}
+              </div>
+              <div className="row" style={{ gap: 14, flexWrap: "wrap", alignItems: "stretch" }}>
+                {data.external_assumptions.map((ea) => {
+                  const meta = SCENARIO_META[ea.scenario as ScenarioName] ?? SCENARIO_META.base;
+                  const key = meta.key as "scenarioBase" | "scenarioBull" | "scenarioBear";
+                  return (
+                    <div key={ea.scenario} className="card card-pad" style={{ flex: "1 1 220px", minWidth: 200, boxShadow: "none" }}>
+                      <span className={`pill ${meta.cls}`}>{t(key, lang)}</span>
+                      <ul style={{ margin: "10px 0 0", paddingLeft: 18, fontSize: 12.5 }}>
+                        {ea.external_factors.map((f, i) => (
+                          <li key={i} style={{ marginBottom: 4 }}>{f}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

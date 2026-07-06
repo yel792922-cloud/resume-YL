@@ -147,6 +147,7 @@ class CompareRow(BaseModel):
 
 class CompareResponse(BaseModel):
     dimension: str                   # "period" | "company"
+    mode: str = "raw"                # raw | clean — which fact pool was compared
     columns: list[str]               # period labels or company names
     document_ids: list[str]
     rows: list[CompareRow]
@@ -217,10 +218,17 @@ class ForecastMetric(BaseModel):
     scenarios: list[ScenarioForecast] = []
 
 
+class ScenarioAssumptions(BaseModel):
+    scenario: str                    # base | bull | bear
+    # External, qualitative scenario assumptions (NOT facts from the report).
+    external_factors: list[str] = []
+
+
 class ForecastResponse(BaseModel):
     document_id: str
     company_name: str | None = None
     report_type: str
+    mode: str = "clean"              # raw | clean — which fact pool was used
     base_period: str | None = None
     forecast_period: str
     cadence: str                     # quarter | half-year | year
@@ -230,6 +238,10 @@ class ForecastResponse(BaseModel):
     metrics: list[ForecastMetric] = []
     guidance: list[SummaryHighlight] = []
     key_risks: list[SummaryHighlight] = []
+    # Expanded drivers: external scenario assumptions per scenario, plus a note
+    # making clear these are assumptions, not report facts.
+    external_assumptions: list[ScenarioAssumptions] = []
+    external_note: str | None = None
 
 
 # ---------------------------- v4: evidence-based Q&A ----------------------------

@@ -110,6 +110,18 @@ export const UI: Record<string, Pair> = {
     en: "Grounded in this report only — not investment advice.",
   },
   tryExample: { zh: "示例问题", en: "Try" },
+
+  // v4.1: analysis mode + external scenario factors + xlsx export
+  externalFactors: { zh: "外部情景假设", en: "External scenario assumptions" },
+  externalFactorsNote: {
+    zh: "以下外部因素为情景假设，并非本报告中的事实数据（仓库中无外部市场/宏观数据源）。",
+    en: "The external factors below are scenario assumptions, not facts from this report (no external market/macro data source is available).",
+  },
+  exportXlsx: { zh: "导出 Excel", en: "Export Excel" },
+  exportCsv: { zh: "导出 CSV", en: "Export CSV" },
+  exportJson: { zh: "导出 JSON", en: "Export JSON" },
+  modeRaw: { zh: "原始", en: "Raw" },
+  modeClean: { zh: "清洗", en: "Clean" },
 };
 
 export function t(key: keyof typeof UI, lang: Lang, vars?: Record<string, string | number>): string {

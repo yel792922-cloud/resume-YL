@@ -8,9 +8,10 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.analysis import document_facts, normalize_mode
 from app.api.serializers import fact_to_out
-from app.cleaning import clean_facts
 from app.cleaning.rules import normalize_unit
+from app.forecasting.assumptions import EXTERNAL_NOTE, external_assumptions
 from app.forecasting.engine import MetricInput, parse_prior_from_snippet, project_metric
 from app.forecasting.periods import annualization_factor, cadence_label, next_period_label
 from app.models.document import Document
@@ -73,10 +74,11 @@ def forecast_document(
     growth_override_pct: float | None = None,
     value_delta_pp: float | None = None,
     margin_delta_pp: float | None = None,
+    mode: str = "clean",
 ) -> ForecastResponse:
-    all_facts = db.query(ExtractedFact).filter(ExtractedFact.document_id == document.id).all()
-    cleaned = clean_facts(all_facts)
-    best = _best_by_concept(cleaned.retained)
+    mode = normalize_mode(mode)
+    pool = document_facts(db, document, mode)
+    best = _best_by_concept(pool)
 
     factor = annualization_factor(document.report_type)
     forecast_period = next_period_label(document.report_period, document.report_type)
@@ -153,6 +155,7 @@ def forecast_document(
         document_id=document.id,
         company_name=document.company_name,
         report_type=document.report_type.value,
+        mode=mode,
         base_period=document.report_period,
         forecast_period=forecast_period,
         cadence=cadence_label(document.report_type),
@@ -160,6 +163,8 @@ def forecast_document(
         growth_override_pct=growth_override_pct,
         disclaimer=DISCLAIMER,
         metrics=metrics,
-        guidance=_highlights(cleaned.retained, FactCategory.GUIDANCE, 5),
-        key_risks=_highlights(cleaned.retained, FactCategory.RISK, 5),
+        guidance=_highlights(pool, FactCategory.GUIDANCE, 5),
+        key_risks=_highlights(pool, FactCategory.RISK, 5),
+        external_assumptions=external_assumptions(),
+        external_note=EXTERNAL_NOTE,
     )

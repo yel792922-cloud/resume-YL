@@ -35,7 +35,8 @@ Upload ─► Ingestion ─► Parsing / OCR ─► Extraction ─► Normalizat
 | Terminology normalize | `app/normalization`       | CN/EN dictionary → unified internal concept layer      |
 | Source mapping        | `app/sourcemap`           | Resolve highlights / bounding boxes for any fact       |
 | Search & comparison   | `app/search`              | In-report search, cross-period / cross-company compare |
-| Summary & export      | `app/summary`             | Evidence-linked summaries, CSV/JSON export             |
+| Analysis mode switch  | `app/analysis`            | Raw / Clean fact view shared by Q&A, forecast, compare |
+| Summary & export      | `app/summary`             | Evidence-linked summaries, CSV/JSON/structured XLSX     |
 | UI presentation       | `app/api` + `frontend/`   | FastAPI routes + React UI                              |
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for details and
