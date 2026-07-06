@@ -1,5 +1,6 @@
 // Typed API client for the Financial Report Analyzer backend.
 import type {
+  AnswerResponse,
   AuthResponse,
   CleanedFactsResponse,
   CompareResponse,
@@ -163,6 +164,14 @@ export const api = {
       req<ForecastResponse>(`/documents/${id}/forecast${q}`, undefined, 20000),
     );
   },
+
+  // ---- v4 Q&A (POST; 20s timeout; not cached — each question is a user action) ----
+  ask: (id: string, question: string) =>
+    req<AnswerResponse>(
+      `/documents/${id}/ask`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) },
+      20000,
+    ),
 
   // ---- Export (authorized blob download) ----
   downloadExport: async (id: string, fmt: "csv" | "json", filename: string) => {

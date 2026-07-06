@@ -222,3 +222,23 @@ export interface ForecastResponse {
   guidance: SummaryHighlight[];
   key_risks: SummaryHighlight[];
 }
+
+// ---- v4: evidence-based Q&A ----
+export interface EvidenceItem {
+  text: string;
+  kind: "fact" | "management" | "guidance" | "risk" | "text";
+  source: SourceRef | null;
+  fact: Fact | null;
+  score: number;
+}
+
+export interface AnswerResponse {
+  document_id: string;
+  question: string;
+  intent: string;
+  answer: string;
+  confidence: ConfidenceLevel;
+  insufficient: boolean;
+  evidence: EvidenceItem[];
+  note: string | null;
+}

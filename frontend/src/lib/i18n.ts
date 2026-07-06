@@ -90,6 +90,26 @@ export const UI: Record<string, Pair> = {
     zh: "这些是基于历史趋势的情景分析估算，并非保证性预测，不构成投资建议。",
     en: "These are scenario-based analytical estimates from historical trends — not guaranteed predictions or investment advice.",
   },
+
+  // Q&A
+  ask: { zh: "问答", en: "Ask" },
+  askPlaceholder: {
+    zh: "就本报告提问，例如：营收为什么增长？现金流是否健康？",
+    en: "Ask about this report, e.g. Why did revenue increase? Is cash flow healthy?",
+  },
+  askButton: { zh: "提问", en: "Ask" },
+  answer: { zh: "回答", en: "Answer" },
+  evidence: { zh: "证据", en: "Evidence" },
+  askEmpty: {
+    zh: "针对本报告提出一个问题，回答将基于报告证据并附带原文出处。",
+    en: "Ask a question about this report. Answers are grounded in report evidence with source citations.",
+  },
+  insufficientEvidence: { zh: "证据不足", en: "Insufficient evidence" },
+  groundedNote: {
+    zh: "回答仅基于本报告内容，非投资建议。",
+    en: "Grounded in this report only — not investment advice.",
+  },
+  tryExample: { zh: "示例问题", en: "Try" },
 };
 
 export function t(key: keyof typeof UI, lang: Lang, vars?: Record<string, string | number>): string {
