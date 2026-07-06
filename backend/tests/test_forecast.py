@@ -43,6 +43,15 @@ def test_flat_when_no_prior():
     assert base.confidence == "low"
 
 
+def test_loss_making_base_is_flat_not_sign_flipped():
+    # Current loss vs smaller prior loss: multiplicative growth would flip signs;
+    # guard falls back to flat instead of projecting nonsense.
+    m = MetricInput("operating_profit", "Operating Profit", None, "亿元", -100.0, -50.0, is_percent=False, source_confidence=0.9)
+    base, bull, bear = project_metric(m)
+    assert base.predicted_value == pytest.approx(-100.0)    # flat, not -200 etc.
+    assert base.confidence == "low"
+
+
 def test_growth_override_applied():
     m = MetricInput("revenue", "Revenue", None, "亿元", 100.0, 90.0, is_percent=False, source_confidence=0.9)
     base, _, _ = project_metric(m, growth_override_pct=20.0)
@@ -90,3 +99,10 @@ def test_forecast_owner_scoped(client, seeded):
     did, _ = seeded
     bob = register(client, "bob-fc@example.com")
     assert client.get(f"/api/documents/{did}/forecast", headers=bob["headers"]).status_code == 404
+
+
+def test_forecast_override_out_of_bounds_rejected(client, seeded):
+    # Extreme override is rejected (422) rather than producing inf / a 500.
+    did, headers = seeded
+    r = client.get(f"/api/documents/{did}/forecast", headers=headers, params={"growth_override_pct": 1e9})
+    assert r.status_code == 422

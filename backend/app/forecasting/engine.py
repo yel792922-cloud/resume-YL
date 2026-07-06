@@ -133,13 +133,18 @@ def project_metric(
             )
         return results
 
-    # Value metric (multiplicative growth).
-    observed_growth = ((m.current_value / m.prior_value - 1) * 100) if has_prior else None
+    # Value metric (multiplicative growth). Only trust a computed growth rate
+    # when both the current and prior base are positive — multiplicative growth
+    # from a negative/zero base (e.g. a loss-making period) flips signs and
+    # yields nonsensical projections, so fall back to a flat assumption there.
+    usable_prior = has_prior and m.current_value > 0 and (m.prior_value or 0) > 0
+    observed_growth = ((m.current_value / m.prior_value - 1) * 100) if usable_prior else None
     base_growth = (
         growth_override_pct
         if growth_override_pct is not None
         else (observed_growth if observed_growth is not None else 0.0)
     )
+    base_level = _base_confidence(usable_prior, m.source_confidence)
     spreads = {
         "base": base_growth,
         "bull": base_growth + value_delta_pp,

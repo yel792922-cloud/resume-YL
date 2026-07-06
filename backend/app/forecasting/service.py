@@ -94,11 +94,12 @@ def forecast_document(
             continue
         is_percent = cid in _PERCENT_CONCEPTS or (normalize_unit(fact.unit) == "%")
         prior = parse_prior_from_snippet(fact.source_text_snippet, fact.metric_value, is_percent)
-        observed = (
-            round((fact.metric_value / prior - 1) * 100, 2)
-            if (not is_percent and prior)
-            else (round(fact.metric_value - prior, 2) if (is_percent and prior is not None) else None)
-        )
+        if is_percent:
+            observed = round(fact.metric_value - prior, 2) if prior is not None else None
+        elif prior and prior > 0 and fact.metric_value > 0:
+            observed = round((fact.metric_value / prior - 1) * 100, 2)
+        else:
+            observed = None
 
         m = MetricInput(
             concept_id=cid,
