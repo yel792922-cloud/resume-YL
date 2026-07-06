@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { MetricCard, SourceLink, StatusPill } from "../components/ui";
@@ -11,7 +11,13 @@ import { useLang, useSource } from "../lib/context";
 import { categoryLabel, reportTypeLabel, t } from "../lib/i18n";
 import type { DocumentDetail, Fact, FactCategory, ReportSummary } from "../types";
 
-type Tab = "overview" | "financials" | "management" | "risks" | "search" | "source" | "history";
+// v3 analytics panels are code-split — loaded only when their tab is opened.
+const ForecastPanel = lazy(() => import("./ForecastPanel").then((m) => ({ default: m.ForecastPanel })));
+const DataQualityPanel = lazy(() => import("./DataQualityPanel").then((m) => ({ default: m.DataQualityPanel })));
+
+type Tab =
+  | "overview" | "financials" | "forecast" | "management"
+  | "risks" | "search" | "source" | "quality" | "history";
 
 export function ReportDetail() {
   const { id = "" } = useParams();
@@ -41,12 +47,16 @@ export function ReportDetail() {
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: t("overview", lang) },
     { key: "financials", label: t("metrics", lang) },
+    { key: "forecast", label: t("forecast", lang) },
     { key: "management", label: t("management", lang) },
     { key: "risks", label: t("risks", lang) },
     { key: "search", label: t("search", lang) },
     { key: "source", label: t("sourceView", lang) },
+    { key: "quality", label: t("dataQuality", lang) },
     { key: "history", label: lang === "zh" ? `历史 (${doc.version_count})` : `History (${doc.version_count})` },
   ];
+
+  const lazyFallback = <div className="center"><div className="spinner" role="status" aria-label="Loading" /></div>;
 
   const exportFile = (fmt: "csv" | "json") =>
     api.downloadExport(id, fmt, `${(doc.company_name || doc.filename).replace(/\s+/g, "_")}_facts.${fmt}`);
@@ -160,9 +170,17 @@ export function ReportDetail() {
         </div>
       )}
 
+      {tab === "forecast" && (
+        <Suspense fallback={lazyFallback}><ForecastPanel documentId={id} /></Suspense>
+      )}
+
       {tab === "search" && <div className="card card-pad"><SearchPanel documentId={id} /></div>}
 
       {tab === "source" && <SourceBrowser documentId={id} pages={doc.pages} />}
+
+      {tab === "quality" && (
+        <Suspense fallback={lazyFallback}><DataQualityPanel documentId={id} /></Suspense>
+      )}
 
       {tab === "history" && <HistoryPanel documentId={id} />}
     </Layout>

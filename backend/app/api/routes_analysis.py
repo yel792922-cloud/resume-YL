@@ -50,10 +50,11 @@ def get_cleaned_facts(
 def get_forecast(
     document_id: str,
     growth_override_pct: float | None = Query(
-        None, description="Optional user growth override (%, or pp for margins) applied to the base scenario"
+        None, ge=-100, le=1000,
+        description="Optional user growth override (%, or pp for margins) applied to the base scenario",
     ),
-    value_delta_pp: float | None = Query(None, description="Bull/bear spread for value metrics (growth pp)"),
-    margin_delta_pp: float | None = Query(None, description="Bull/bear spread for margin metrics (pp)"),
+    value_delta_pp: float | None = Query(None, ge=0, le=200, description="Bull/bear spread for value metrics (growth pp)"),
+    margin_delta_pp: float | None = Query(None, ge=0, le=100, description="Bull/bear spread for margin metrics (pp)"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):

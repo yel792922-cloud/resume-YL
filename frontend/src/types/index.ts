@@ -159,3 +159,66 @@ export interface CompareResponse {
   document_ids: string[];
   rows: CompareRow[];
 }
+
+// ---- v3: data cleaning ----
+export interface CleaningAuditEntry {
+  action: "removed" | "deduped" | "normalized";
+  reason: string;
+  fact_id: number | null;
+  concept_id: string | null;
+  metric_name: string | null;
+  snippet: string | null;
+  detail: string | null;
+  confidence: number | null;
+}
+
+export interface CleanedFactsResponse {
+  document_id: string;
+  stats: { retained: number; removed: number; deduped: number; normalized: number };
+  retained: Fact[];
+  audit: CleaningAuditEntry[];
+}
+
+// ---- v3: scenario forecasting ----
+export type ScenarioName = "base" | "bull" | "bear";
+export type ConfidenceLevel = "low" | "medium" | "high";
+
+export interface ScenarioForecast {
+  scenario: ScenarioName;
+  period: string;
+  predicted_value: number;
+  annualized_value: number | null;
+  growth_pct: number | null;
+  direction: "up" | "down" | "flat";
+  confidence: ConfidenceLevel;
+  assumptions: string[];
+  explanation: string;
+}
+
+export interface ForecastMetric {
+  concept_id: string;
+  metric_name: string;
+  metric_label: string | null;
+  unit: string | null;
+  is_percent: boolean;
+  current_value: number;
+  prior_value: number | null;
+  observed_growth_pct: number | null;
+  source: SourceRef | null;
+  scenarios: ScenarioForecast[];
+}
+
+export interface ForecastResponse {
+  document_id: string;
+  company_name: string | null;
+  report_type: string;
+  base_period: string | null;
+  forecast_period: string;
+  cadence: string;
+  annualized: boolean;
+  growth_override_pct: number | null;
+  disclaimer: string;
+  metrics: ForecastMetric[];
+  guidance: SummaryHighlight[];
+  key_risks: SummaryHighlight[];
+}
