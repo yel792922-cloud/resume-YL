@@ -11,12 +11,13 @@ import { useLang, useSource } from "../lib/context";
 import { categoryLabel, reportTypeLabel, t } from "../lib/i18n";
 import type { DocumentDetail, Fact, FactCategory, ReportSummary } from "../types";
 
-// v3 analytics panels are code-split — loaded only when their tab is opened.
+// Analytics panels are code-split — loaded only when their tab is opened.
 const ForecastPanel = lazy(() => import("./ForecastPanel").then((m) => ({ default: m.ForecastPanel })));
 const DataQualityPanel = lazy(() => import("./DataQualityPanel").then((m) => ({ default: m.DataQualityPanel })));
+const QAPanel = lazy(() => import("./QAPanel").then((m) => ({ default: m.QAPanel })));
 
 type Tab =
-  | "overview" | "financials" | "forecast" | "management"
+  | "overview" | "ask" | "financials" | "forecast" | "management"
   | "risks" | "search" | "source" | "quality" | "history";
 
 export function ReportDetail() {
@@ -46,6 +47,7 @@ export function ReportDetail() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: t("overview", lang) },
+    { key: "ask", label: t("ask", lang) },
     { key: "financials", label: t("metrics", lang) },
     { key: "forecast", label: t("forecast", lang) },
     { key: "management", label: t("management", lang) },
@@ -168,6 +170,10 @@ export function ReportDetail() {
           ))}
           {cat("risk").length === 0 && <div className="card empty">{t("noData", lang)}</div>}
         </div>
+      )}
+
+      {tab === "ask" && (
+        <Suspense fallback={lazyFallback}><QAPanel documentId={id} /></Suspense>
       )}
 
       {tab === "forecast" && (
