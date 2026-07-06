@@ -157,3 +157,41 @@ outputs as analytical estimates. Exposed at
 
 Both endpoints are owner-scoped via the same `get_owned_document` guard and
 computed from cleaned facts, so forecasting benefits from cleaning automatically.
+
+---
+
+## v4.0 — evidence-based single-report Q&A
+
+An additive, **read-only** question-answering layer (`app/qa/`) over one report.
+It reuses existing primitives and adds no tables, no migration, and no changes
+to existing endpoints. **Extractive only — no LLM, no general knowledge**: every
+answer is composed from retrieved facts/snippets and carries source citations,
+so it stays as traceable as the rest of the product.
+
+```
+question ─► intent (classify) ─► retrieval (cleaned facts + concepts + search)
+                                        │
+        AnswerResponse ◄── compose (grounded template + evidence-strength) ◄──┘
+```
+
+- **Intent** (`qa/intent.py`): deterministic bilingual keyword/concept routing →
+  `metric_lookup | why_change | period_change | cash_health | risks | general`,
+  plus the target concept(s) via the existing term matcher.
+- **Retrieval** (`qa/retrieval.py`): prefers **cleaned** facts (reuses
+  `clean_facts`), pulls the concept fact(s) + management/guidance lines that
+  mention them + risk facts, and falls back to in-report `search_document`.
+- **Compose** (`qa/service.py`): builds a concise answer from the evidence
+  (metric + prior→current delta from the snippet + the explaining commentary),
+  attaches evidence bullets each with a `SourceRef`, and reports an
+  evidence-strength level. When retrieval is weak/empty it answers
+  conservatively and sets `insufficient=true` — grounded over fluent.
+
+**Endpoint:** `POST /api/documents/{id}/ask` (owner-scoped), body `{question}`,
+returns `AnswerResponse{ answer, confidence, insufficient, evidence[], note }`.
+Reuses `SourceRef`, so the frontend's `SourceLink` + source drawer give
+click-to-jump back to the original report for free.
+
+**Frontend:** an **Ask** tab in Report Detail (`report/QAPanel.tsx`) — question
+input, grounded answer with a confidence badge, cited evidence cards with jump
+links, and loading/empty/error states. Code-split; consistent with the existing
+panels. No redesign.

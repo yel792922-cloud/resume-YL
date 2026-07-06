@@ -64,8 +64,21 @@ pipeline), production Vite build, and a live authenticated run.
   trend, with an optional growth override; every metric cites its source.
   `GET /documents/{id}/forecast`. Backend-only (no forecast UI yet).
 
+## ✅ v4.0 (done) — evidence-based single-report Q&A
+
+- **Q&A layer** (`app/qa/`) — extractive, grounded, cited answers for one report.
+  Intent routing → evidence retrieval (cleaned facts + concepts + in-report
+  search) → conservative extractive composition with an evidence-strength level;
+  answers `insufficient` when the report lacks support. `POST /documents/{id}/ask`.
+- **Ask tab** (`report/QAPanel.tsx`) — question input, grounded answer with a
+  confidence badge, cited evidence cards with click-to-jump source links.
+- No LLM, no new tables, no migration; reuses `search`, `cleaning`, concepts,
+  and the `SourceRef` jump plumbing.
+
 ## 🔜 Next (polish & advanced analytics)
-- **Forecast UI** — a frontend Forecast tab consuming `/forecast` (deferred).
+- **Answer bookmarks** — optionally persist useful Q&A answers as research notes
+  (deferred; needs a small notes table + migration).
+- **Forecast UI** — a frontend Forecast tab consuming `/forecast` (shipped in v3).
 - **Multi-column periods** — persist every period column per fact (not just the
   current period) for richer in-document trend rows, giving forecasting a longer
   history than the single prior column.

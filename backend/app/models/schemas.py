@@ -230,3 +230,27 @@ class ForecastResponse(BaseModel):
     metrics: list[ForecastMetric] = []
     guidance: list[SummaryHighlight] = []
     key_risks: list[SummaryHighlight] = []
+
+
+# ---------------------------- v4: evidence-based Q&A ----------------------------
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=500)
+
+
+class EvidenceItem(BaseModel):
+    text: str                        # the cited statement / snippet
+    kind: str                        # fact | management | guidance | risk | text
+    source: SourceRef | None = None  # jump target back to the report
+    fact: FactOut | None = None      # present when the evidence is a structured fact
+    score: float = 0.0
+
+
+class AnswerResponse(BaseModel):
+    document_id: str
+    question: str
+    intent: str                      # metric_lookup | why_change | period_change | cash_health | risks | general
+    answer: str                      # concise, grounded answer text
+    confidence: str                  # low | medium | high
+    insufficient: bool = False       # true when the report lacks evidence to answer confidently
+    evidence: list[EvidenceItem] = []
+    note: str | None = None          # conservative caveat / disclaimer

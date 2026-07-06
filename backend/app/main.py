@@ -11,6 +11,7 @@ from app.api import (
     routes_compare,
     routes_documents,
     routes_export,
+    routes_qa,
     routes_search,
 )
 from app.auth import routes_auth
@@ -95,3 +96,4 @@ app.include_router(routes_search.router)
 app.include_router(routes_compare.router)
 app.include_router(routes_export.router)
 app.include_router(routes_analysis.router)
+app.include_router(routes_qa.router)
