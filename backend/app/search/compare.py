@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.analysis import document_facts
 from app.models.document import Document
 from app.models.fact import ExtractedFact
 from app.models.schemas import CompareCell, CompareResponse, CompareRow
@@ -23,8 +24,8 @@ _COMPARE_ORDER = [
 ]
 
 
-def _best_fact_per_concept(db: Session, document_id: str) -> dict[str, ExtractedFact]:
-    facts = db.query(ExtractedFact).filter(ExtractedFact.document_id == document_id).all()
+def _best_fact_per_concept(db: Session, document: Document, mode: str) -> dict[str, ExtractedFact]:
+    facts = document_facts(db, document, mode)
     best: dict[str, ExtractedFact] = {}
     for f in facts:
         if not f.concept_id:
@@ -36,7 +37,7 @@ def _best_fact_per_concept(db: Session, document_id: str) -> dict[str, Extracted
 
 
 def compare_documents(
-    db: Session, documents: list[Document], dimension: str = "period"
+    db: Session, documents: list[Document], dimension: str = "period", mode: str = "raw"
 ) -> CompareResponse:
     columns: list[str] = []
     for d in documents:
@@ -45,7 +46,7 @@ def compare_documents(
         else:
             columns.append(d.report_period or d.filename)
 
-    per_doc = {d.id: _best_fact_per_concept(db, d.id) for d in documents}
+    per_doc = {d.id: _best_fact_per_concept(db, d, mode) for d in documents}
 
     # Only include concepts present in at least one document, in canonical order.
     present = {cid for facts in per_doc.values() for cid in facts}
@@ -80,6 +81,7 @@ def compare_documents(
 
     return CompareResponse(
         dimension=dimension,
+        mode=mode,
         columns=columns,
         document_ids=[d.id for d in documents],
         rows=rows,

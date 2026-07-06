@@ -16,6 +16,7 @@ dependencies = [
     "reportlab>=4.0",            # used only to generate the built-in sample PDF
     "bcrypt>=4.1",              # password hashing
     "PyJWT>=2.8",              # access tokens
+    "openpyxl>=3.1",           # structured .xlsx analysis export
 ]
 
 [project.optional-dependencies]

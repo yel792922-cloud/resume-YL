@@ -1,9 +1,41 @@
 import { type ReactNode, useState } from "react";
 import { useSource } from "../lib/context";
 import { useLang } from "../lib/context";
+import { useMode, type AnalysisMode } from "../lib/mode";
 import { t } from "../lib/i18n";
 import { confidenceTier, factValueWithUnit } from "../lib/format";
 import type { ConfidenceLevel, DocumentStatus, Fact, SourceRef } from "../types";
+
+/** Raw / Clean analysis-mode toggle. Reads the global mode; affects Q&A,
+ *  forecasting, comparison and export. */
+export function ModeToggle() {
+  const { lang } = useLang();
+  const { mode, setMode } = useMode();
+  const opts: { key: AnalysisMode; zh: string; en: string }[] = [
+    { key: "clean", zh: "清洗", en: "Clean" },
+    { key: "raw", zh: "原始", en: "Raw" },
+  ];
+  return (
+    <div
+      className="mode-toggle"
+      role="group"
+      aria-label={lang === "zh" ? "数据模式" : "Analysis mode"}
+      title={lang === "zh" ? "清洗 = 规范化数据；原始 = 未清洗提取" : "Clean = normalized data; Raw = uncleaned extraction"}
+    >
+      <span className="muted" style={{ fontSize: 12, marginRight: 2 }}>{lang === "zh" ? "数据" : "Data"}:</span>
+      {opts.map((o) => (
+        <button
+          key={o.key}
+          className={`mode-opt ${mode === o.key ? "active" : ""}`}
+          aria-pressed={mode === o.key}
+          onClick={() => setMode(o.key)}
+        >
+          {lang === "zh" ? o.zh : o.en}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** A clickable evidence chip → opens the source drawer with highlight. */
 export function SourceLink({

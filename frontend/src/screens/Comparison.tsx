@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import { Layout } from "../components/Layout";
-import { SourceLink } from "../components/ui";
+import { SourceLink, ModeToggle } from "../components/ui";
 import { api } from "../api/client";
 import { useLang } from "../lib/context";
+import { useMode } from "../lib/mode";
 import { t } from "../lib/i18n";
 import { factValue } from "../lib/format";
 import type { CompareResponse, DocumentSummary } from "../types";
 
 export function Comparison() {
   const { lang } = useLang();
+  const { mode } = useMode();
   const [docs, setDocs] = useState<DocumentSummary[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [dimension, setDimension] = useState<"period" | "company">("period");
@@ -22,9 +24,9 @@ export function Comparison() {
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   useEffect(() => {
-    if (selected.length >= 1) api.compare(selected, dimension).then(setResult);
+    if (selected.length >= 1) api.compare(selected, dimension, mode).then(setResult);
     else setResult(null);
-  }, [selected, dimension]);
+  }, [selected, dimension, mode]);
 
   return (
     <Layout title={t("comparison", lang)}>
@@ -42,12 +44,15 @@ export function Comparison() {
           ))}
           {docs.length === 0 && <span className="muted">{t("noData", lang)}</span>}
         </div>
-        <div className="row" style={{ alignItems: "center" }}>
-          <span className="muted">{lang === "zh" ? "对比维度：" : "Dimension:"}</span>
-          <select value={dimension} onChange={(e) => setDimension(e.target.value as "period" | "company")}>
-            <option value="period">{lang === "zh" ? "纵向 · 按报告期" : "By period"}</option>
-            <option value="company">{lang === "zh" ? "横向 · 按公司" : "By company"}</option>
-          </select>
+        <div className="row" style={{ alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+          <div className="row" style={{ alignItems: "center" }}>
+            <span className="muted">{lang === "zh" ? "对比维度：" : "Dimension:"}</span>
+            <select value={dimension} onChange={(e) => setDimension(e.target.value as "period" | "company")}>
+              <option value="period">{lang === "zh" ? "纵向 · 按报告期" : "By period"}</option>
+              <option value="company">{lang === "zh" ? "横向 · 按公司" : "By company"}</option>
+            </select>
+          </div>
+          <ModeToggle />
         </div>
       </div>
 

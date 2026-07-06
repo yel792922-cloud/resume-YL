@@ -122,11 +122,11 @@ def _dedupe(items: list[EvidenceItem]) -> list[EvidenceItem]:
     return out
 
 
-def answer_question(db: Session, document: Document, question: str) -> AnswerResponse:
+def answer_question(db: Session, document: Document, question: str, mode: str = "clean") -> AnswerResponse:
     question = (question or "").strip()
     qi = classify(question)
     lang = "zh" if qi.lang == "zh" else "en"
-    r = gather(db, document, qi, question)
+    r = gather(db, document, qi, question, mode)
 
     answer = ""
     evidence: list[EvidenceItem] = []

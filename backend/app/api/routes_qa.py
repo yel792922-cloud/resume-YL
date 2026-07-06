@@ -4,7 +4,7 @@ Owner-scoped, read-only, computed on demand (nothing persisted).
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.ownership import get_owned_document
@@ -21,8 +21,9 @@ router = APIRouter(prefix="/api/documents", tags=["qa"])
 def ask(
     document_id: str,
     body: AskRequest,
+    mode: str = Query("clean", pattern="^(raw|clean)$", description="Analyze raw or cleaned facts"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     doc = get_owned_document(db, document_id, user)
-    return answer_question(db, doc, body.question)
+    return answer_question(db, doc, body.question, mode)

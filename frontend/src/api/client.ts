@@ -146,9 +146,9 @@ export const api = {
   getPage: (id: string, page: number) => req<PageOut>(`/documents/${id}/pages/${page}`),
   getSummary: (id: string) => req<ReportSummary>(`/documents/${id}/summary`),
   search: (id: string, q: string) => req<SearchResponse>(`/documents/${id}/search?q=${encodeURIComponent(q)}`),
-  compare: (ids: string[], dimension: "period" | "company" = "period") => {
+  compare: (ids: string[], dimension: "period" | "company" = "period", mode: string = "clean") => {
     const params = ids.map((i) => `document_ids=${encodeURIComponent(i)}`).join("&");
-    return req<CompareResponse>(`/compare?${params}&dimension=${dimension}`);
+    return req<CompareResponse>(`/compare?${params}&dimension=${dimension}&mode=${mode}`);
   },
 
   // ---- History ----
@@ -158,24 +158,29 @@ export const api = {
   // ---- v3 analytics (cached per session; 20s timeout) ----
   getCleaned: (id: string) =>
     cached(`cleaned:${id}`, () => req<CleanedFactsResponse>(`/documents/${id}/cleaned`, undefined, 20000)),
-  getForecast: (id: string, growthOverridePct?: number | null) => {
-    const q = growthOverridePct == null ? "" : `?growth_override_pct=${growthOverridePct}`;
-    return cached(`forecast:${id}:${growthOverridePct ?? ""}`, () =>
+  getForecast: (id: string, growthOverridePct?: number | null, mode: string = "clean") => {
+    const params = new URLSearchParams();
+    if (growthOverridePct != null) params.set("growth_override_pct", String(growthOverridePct));
+    params.set("mode", mode);
+    const q = `?${params.toString()}`;
+    return cached(`forecast:${id}:${growthOverridePct ?? ""}:${mode}`, () =>
       req<ForecastResponse>(`/documents/${id}/forecast${q}`, undefined, 20000),
     );
   },
 
   // ---- v4 Q&A (POST; 20s timeout; not cached — each question is a user action) ----
-  ask: (id: string, question: string) =>
+  ask: (id: string, question: string, mode: string = "clean") =>
     req<AnswerResponse>(
-      `/documents/${id}/ask`,
+      `/documents/${id}/ask?mode=${mode}`,
       { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question }) },
       20000,
     ),
 
   // ---- Export (authorized blob download) ----
-  downloadExport: async (id: string, fmt: "csv" | "json", filename: string) => {
-    const res = await handle(await fetch(`${BASE}/documents/${id}/export.${fmt}`, { headers: authHeaders() }));
+  downloadExport: async (id: string, fmt: "csv" | "json" | "xlsx", filename: string, mode: string = "clean") => {
+    const res = await handle(
+      await fetch(`${BASE}/documents/${id}/export.${fmt}?mode=${mode}`, { headers: authHeaders() }),
+    );
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

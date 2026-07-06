@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api, ApiError } from "../api/client";
 import { SourceLink, ConfidenceBadge } from "../components/ui";
 import { useLang } from "../lib/context";
+import { useMode } from "../lib/mode";
 import { t, type Lang } from "../lib/i18n";
 import type { AnswerResponse, EvidenceItem } from "../types";
 
@@ -43,6 +44,7 @@ function EvidenceRow({ documentId, item, lang }: { documentId: string; item: Evi
 /** Evidence-based Q&A for a single report: grounded answer + cited evidence. */
 export function QAPanel({ documentId }: { documentId: string }) {
   const { lang } = useLang();
+  const { mode } = useMode();
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function QAPanel({ documentId }: { documentId: string }) {
     setLoading(true);
     setError(null);
     try {
-      setData(await api.ask(documentId, text));
+      setData(await api.ask(documentId, text, mode));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : String(e));
     } finally {
