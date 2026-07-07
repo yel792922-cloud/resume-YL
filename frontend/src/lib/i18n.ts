@@ -132,6 +132,27 @@ export const UI: Record<string, Pair> = {
     en: "Same-named metrics are grouped by scope — consolidated totals are kept separate from segment/geography detail to avoid ambiguity.",
   },
 
+  // v4.3: layered metric context + unit-as-evidence
+  basisSuffix: { zh: "口径", en: " basis" },     // e.g. 合并口径 / Consolidated basis
+  unitUnknown: { zh: "未识别", en: "n/a" },       // unit could not be determined confidently
+  sourceHint: { zh: "来源", en: "Source" },
+
+  // v4.3: evidence-centric cleaning view
+  cleaningRules: { zh: "清洗规则", en: "Cleaning rules" },
+  groupedExceptions: { zh: "过滤明细（按原因分组）", en: "Filtered items by reason" },
+  ruleBoilerplate: { zh: "模板 / 页眉页脚 / 页码", en: "Boilerplate / header / page number" },
+  ruleOcrGarbage: { zh: "OCR 噪声过滤", en: "OCR-garbage filter" },
+  ruleLowInformation: { zh: "低信息量过滤", en: "Low-information filter" },
+  ruleMinConfidence: { zh: "数值置信度下限", en: "Numeric confidence floor" },
+  ruleDedup: { zh: "按口径/期间去重", en: "Dedup by scope / period" },
+  ruleUnitNormalization: { zh: "单位规范化", en: "Unit normalization" },
+  onPage: { zh: "第 {n} 页", en: "p.{n}" },
+  whyRemoved: { zh: "过滤原因", en: "Why filtered" },
+  retainedNote: {
+    zh: "保留项均可在“财务指标”标签中按口径查看，并可追溯原文。",
+    en: "Retained facts are viewable by scope in the Metrics tab, each traceable to source.",
+  },
+
   exportXlsx: { zh: "导出 Excel", en: "Export Excel" },
   exportCsv: { zh: "导出 CSV", en: "Export CSV" },
   exportJson: { zh: "导出 JSON", en: "Export JSON" },

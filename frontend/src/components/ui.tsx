@@ -3,7 +3,7 @@ import { useSource } from "../lib/context";
 import { useLang } from "../lib/context";
 import { useMode, type AnalysisMode } from "../lib/mode";
 import { t } from "../lib/i18n";
-import { confidenceTier, factValueWithUnit } from "../lib/format";
+import { confidenceTier, factValueWithUnit, metricContext } from "../lib/format";
 import type { ConfidenceLevel, DocumentStatus, Fact, SourceRef } from "../types";
 
 /** Raw / Clean analysis-mode toggle. Reads the global mode; affects Q&A,
@@ -171,8 +171,13 @@ export function MetricCard({ fact }: { fact: Fact }) {
   const label = lang === "zh" ? fact.metric_label || fact.metric_name : fact.metric_name;
   return (
     <div className="metric" onClick={() => open(fact.document_id, fact.source, label)}>
-      <div className="label">{label}</div>
+      <div className="label" style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        {label}
+        <ScopeChip scopeType={fact.scope_type} scopeLabel={fact.scope_label} />
+      </div>
       <div className="value">{factValueWithUnit(fact)}</div>
+      {/* Layered context line: scope · period · unit. */}
+      <div className="muted" style={{ fontSize: 11, marginBottom: 6 }}>{metricContext(fact, lang)}</div>
       <div className="foot">
         <Confidence score={fact.confidence_score} />
         <SourceLink documentId={fact.document_id} source={fact.source} />

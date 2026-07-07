@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { PanelStates, Collapsible } from "../components/ui";
 import { api } from "../api/client";
 import { useLang } from "../lib/context";
@@ -6,19 +5,36 @@ import { useAsync } from "../lib/async";
 import { t, type Lang } from "../lib/i18n";
 import type { CleaningAuditEntry } from "../types";
 
-// Map a backend cleaning reason to a friendly bilingual label + pill color.
-function reasonMeta(entry: CleaningAuditEntry, lang: Lang): { label: string; cls: string } {
+// Active cleaning-rule ids (from the API) → localized label.
+const RULE_LABEL: Record<string, "ruleBoilerplate" | "ruleOcrGarbage" | "ruleLowInformation" | "ruleMinConfidence" | "ruleDedup" | "ruleUnitNormalization"> = {
+  boilerplate: "ruleBoilerplate",
+  ocr_garbage: "ruleOcrGarbage",
+  low_information: "ruleLowInformation",
+  min_confidence: "ruleMinConfidence",
+  dedup: "ruleDedup",
+  unit_normalization: "ruleUnitNormalization",
+};
+
+// Reason category used to *group* filtered items, so the audit reads as a few
+// labelled buckets instead of one long noisy list.
+type ReasonKey = "duplicate" | "ocr" | "confidence" | "boilerplate" | "lowinfo" | "other";
+function reasonKey(entry: CleaningAuditEntry): ReasonKey {
   const r = entry.reason.toLowerCase();
-  const pick = (zh: string, en: string, cls: string) => ({ label: lang === "zh" ? zh : en, cls });
-  if (entry.action === "deduped" || r.includes("duplicate")) return pick("重复", "Duplicate", "gray");
-  if (r.includes("ocr")) return pick("OCR 噪声", "OCR noise", "amber");
-  if (r.includes("confidence")) return pick("低置信度", "Low confidence", "amber");
-  if (r.includes("page-number") || r.includes("header") || r.includes("boilerplate"))
-    return pick("模板 / 页眉页脚", "Boilerplate / header", "gray");
-  if (r.includes("low-information")) return pick("低信息量", "Low-information", "gray");
-  if (r.includes("unit")) return pick("单位规范化", "Unit normalized", "blue");
-  return pick(entry.reason, entry.reason, "gray");
+  if (entry.action === "deduped" || r.includes("duplicate")) return "duplicate";
+  if (r.includes("ocr")) return "ocr";
+  if (r.includes("confidence")) return "confidence";
+  if (r.includes("page-number") || r.includes("header") || r.includes("boilerplate")) return "boilerplate";
+  if (r.includes("low-information")) return "lowinfo";
+  return "other";
 }
+const REASON_META: Record<ReasonKey, { cls: string; zh: string; en: string }> = {
+  duplicate: { cls: "gray", zh: "重复（同口径/期间）", en: "Duplicate (same scope/period)" },
+  ocr: { cls: "amber", zh: "OCR 噪声", en: "OCR noise" },
+  confidence: { cls: "amber", zh: "低置信度", en: "Low confidence" },
+  boilerplate: { cls: "gray", zh: "模板 / 页眉页脚 / 页码", en: "Boilerplate / header / page no." },
+  lowinfo: { cls: "gray", zh: "低信息量", en: "Low-information" },
+  other: { cls: "gray", zh: "其他", en: "Other" },
+};
 
 function StatTile({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
@@ -29,93 +45,124 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
   );
 }
 
-function FilteredRow({ entry, lang }: { entry: CleaningAuditEntry; lang: Lang }) {
-  const meta = reasonMeta(entry, lang);
-  const original = entry.snippet || entry.metric_name || "—";
+/** One filtered item as evidence: page + snippet + reason + confidence. */
+function ExceptionRow({ entry, lang }: { entry: CleaningAuditEntry; lang: Lang }) {
+  const snippet = entry.snippet || entry.metric_name || "—";
   return (
-    <li className="row" style={{ justifyContent: "space-between", gap: 10, padding: "8px 0", borderBottom: "1px solid var(--line)", alignItems: "start" }}>
-      <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={original}>
-        {original}
-      </span>
-      <span className={`pill ${meta.cls}`} style={{ flexShrink: 0 }}>{meta.label}</span>
+    <li style={{ padding: "8px 0", borderBottom: "1px solid var(--line)" }}>
+      <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 3 }}>
+        {entry.page_number != null && (
+          <span className="pill blue" style={{ fontSize: 11 }}>{t("onPage", lang, { n: entry.page_number })}</span>
+        )}
+        {entry.report_section && <span className="muted" style={{ fontSize: 11 }}>{entry.report_section}</span>}
+        {entry.confidence != null && (
+          <span className="muted" style={{ fontSize: 11 }}>· {Math.round(entry.confidence * 100)}%</span>
+        )}
+      </div>
+      <div className="snippet" style={{ fontSize: 12.5 }} title={snippet}>{snippet}</div>
+      {entry.detail && <div className="muted" style={{ fontSize: 11, marginTop: 3 }}>{entry.detail}</div>}
     </li>
   );
 }
 
-/** Data Quality: how much noise cleaning removed, and exactly what + why. */
+/** Data Quality: an evidence-centric, layered view of the cleaning pass —
+ *  which rules ran, the high-level counts, and filtered items grouped by reason
+ *  with their page + snippet + reason so users see *what* and *why*. */
 export function DataQualityPanel({ documentId }: { documentId: string }) {
   const { lang } = useLang();
   const { data, loading, error, reload } = useAsync(() => api.getCleaned(documentId), [documentId]);
-  const [expanded, setExpanded] = useState(false);
 
   return (
     <PanelStates loading={loading} error={error} onRetry={reload}>
-      {data && (
-        <div className="grid" style={{ gap: 20 }}>
-          {(() => {
-            const { retained, removed, deduped, normalized } = data.stats;
-            const filtered = removed + deduped;
-            const total = retained + filtered;
-            const rate = total > 0 ? Math.round((filtered / total) * 100) : 0;
-            const filteredEntries = data.audit.filter((a) => a.action === "removed" || a.action === "deduped");
-            const normalizedEntries = data.audit.filter((a) => a.action === "normalized");
-            const VISIBLE = 6;
-            const shown = expanded ? filteredEntries : filteredEntries.slice(0, VISIBLE);
-            return (
-              <>
-                <div className="row" style={{ flexWrap: "wrap", gap: 14 }}>
-                  <StatTile label={t("totalExtracted", lang)} value={String(total)} />
-                  <StatTile label={t("retained", lang)} value={String(retained)} accent="var(--up)" />
-                  <StatTile label={t("filtered", lang)} value={String(filtered)} accent={filtered ? "var(--warn)" : undefined} />
-                  <StatTile label={t("cleaningRate", lang)} value={`${rate}%`} />
+      {data && (() => {
+        const { retained, removed, deduped, normalized } = data.stats;
+        const filtered = removed + deduped;
+        const total = retained + filtered;
+        const rate = total > 0 ? Math.round((filtered / total) * 100) : 0;
+
+        const filteredEntries = data.audit.filter((a) => a.action === "removed" || a.action === "deduped");
+        const normalizedEntries = data.audit.filter((a) => a.action === "normalized");
+
+        // Group filtered items by reason category (largest group first).
+        const groups = new Map<ReasonKey, CleaningAuditEntry[]>();
+        for (const e of filteredEntries) {
+          const k = reasonKey(e);
+          (groups.get(k) ?? groups.set(k, []).get(k)!).push(e);
+        }
+        const orderedGroups = [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
+
+        return (
+          <div className="grid" style={{ gap: 20 }}>
+            {/* Layer 1 — high-level counts. */}
+            <div className="row" style={{ flexWrap: "wrap", gap: 14 }}>
+              <StatTile label={t("totalExtracted", lang)} value={String(total)} />
+              <StatTile label={t("retained", lang)} value={String(retained)} accent="var(--up)" />
+              <StatTile label={t("filtered", lang)} value={String(filtered)} accent={filtered ? "var(--warn)" : undefined} />
+              <StatTile label={t("cleaningRate", lang)} value={`${rate}%`} />
+            </div>
+
+            {/* Layer 2 — which rules are in effect. */}
+            {data.rules.length > 0 && (
+              <div className="card card-pad">
+                <p className="section-title" style={{ margin: "0 0 10px" }}>{t("cleaningRules", lang)}</p>
+                <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
+                  {data.rules.map((r) => (
+                    <span key={r} className="pill gray" style={{ fontSize: 11.5 }}>
+                      {RULE_LABEL[r] ? t(RULE_LABEL[r], lang) : r}
+                    </span>
+                  ))}
                 </div>
+              </div>
+            )}
 
-                <div className="card card-pad">
-                  <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <p className="section-title" style={{ margin: 0 }}>{t("filteredItems", lang)}</p>
-                    {normalized > 0 && (
-                      <span className="muted" style={{ fontSize: 12 }}>
-                        {normalized} {t("normalized", lang)}
-                      </span>
-                    )}
-                  </div>
+            {/* Layer 3 — filtered items grouped by reason (evidence per item). */}
+            <div className="card card-pad">
+              <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <p className="section-title" style={{ margin: 0 }}>{t("groupedExceptions", lang)}</p>
+                {normalized > 0 && <span className="muted" style={{ fontSize: 12 }}>{normalized} {t("normalized", lang)}</span>}
+              </div>
 
-                  {filtered === 0 ? (
-                    <div className="pill green" style={{ whiteSpace: "normal" }}>✓ {t("noNoise", lang)}</div>
-                  ) : (
-                    <>
-                      <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                        {shown.map((e, i) => <FilteredRow key={i} entry={e} lang={lang} />)}
-                      </ul>
-                      {filteredEntries.length > VISIBLE && (
-                        <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => setExpanded((v) => !v)} aria-expanded={expanded}>
-                          {expanded ? t("showLess", lang) : `${t("showAll", lang)} (${filteredEntries.length})`}
-                        </button>
-                      )}
-                    </>
-                  )}
-
-                  {normalizedEntries.length > 0 && (
-                    <div style={{ marginTop: 14 }}>
-                      <Collapsible title={t("normalized", lang)} count={normalizedEntries.length}>
+              {filtered === 0 ? (
+                <div className="pill green" style={{ whiteSpace: "normal" }}>✓ {t("noNoise", lang)}</div>
+              ) : (
+                <div className="grid" style={{ gap: 10 }}>
+                  {orderedGroups.map(([key, entries], gi) => {
+                    const meta = REASON_META[key];
+                    return (
+                      <Collapsible
+                        key={key}
+                        title={`${lang === "zh" ? meta.zh : meta.en}`}
+                        count={entries.length}
+                        defaultOpen={gi === 0}
+                      >
                         <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-                          {normalizedEntries.map((e, i) => (
-                            <li key={i} className="muted" style={{ fontSize: 12.5, padding: "5px 0", borderBottom: "1px solid var(--line)" }}>
-                              {e.metric_name || e.concept_id}: {e.detail}
-                            </li>
-                          ))}
+                          {entries.map((e, i) => <ExceptionRow key={i} entry={e} lang={lang} />)}
                         </ul>
                       </Collapsible>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
+              )}
 
-                <div className="muted" style={{ fontSize: 12 }}>{t("cleaningNote", lang)}</div>
-              </>
-            );
-          })()}
-        </div>
-      )}
+              {normalizedEntries.length > 0 && (
+                <div style={{ marginTop: 14 }}>
+                  <Collapsible title={t("ruleUnitNormalization", lang)} count={normalizedEntries.length}>
+                    <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+                      {normalizedEntries.map((e, i) => (
+                        <li key={i} className="muted" style={{ fontSize: 12.5, padding: "5px 0", borderBottom: "1px solid var(--line)" }}>
+                          {e.metric_name || e.concept_id}: {e.detail}
+                        </li>
+                      ))}
+                    </ul>
+                  </Collapsible>
+                </div>
+              )}
+            </div>
+
+            <div className="muted" style={{ fontSize: 12 }}>{t("cleaningNote", lang)} {t("retainedNote", lang)}</div>
+          </div>
+        );
+      })()}
     </PanelStates>
   );
 }

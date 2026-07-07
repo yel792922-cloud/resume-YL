@@ -173,11 +173,14 @@ export interface CleaningAuditEntry {
   snippet: string | null;
   detail: string | null;
   confidence: number | null;
+  page_number: number | null;
+  report_section: string | null;
 }
 
 export interface CleanedFactsResponse {
   document_id: string;
   stats: { retained: number; removed: number; deduped: number; normalized: number };
+  rules: string[];
   retained: Fact[];
   audit: CleaningAuditEntry[];
 }
