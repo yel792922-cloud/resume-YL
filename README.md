@@ -32,7 +32,7 @@ Upload ─► Ingestion ─► Parsing / OCR ─► Extraction ─► Normalizat
 | Document ingestion    | `app/ingestion`           | Store uploads, register documents, orchestrate ingest |
 | OCR & parsing         | `app/parsing`             | Digital PDF parse (words+bbox+tables), pluggable OCR   |
 | Financial extraction  | `app/extraction`          | Rule-based bilingual metric/business-signal extractors |
-| Terminology normalize | `app/normalization`       | CN/EN dictionary → unified internal concept layer      |
+| Terminology normalize | `app/normalization`       | CN/EN dictionary + metric-scope classifier (consolidated / segment / geography / per-share) |
 | Source mapping        | `app/sourcemap`           | Resolve highlights / bounding boxes for any fact       |
 | Search & comparison   | `app/search`              | In-report search, cross-period / cross-company compare |
 | Analysis mode switch  | `app/analysis`            | Raw / Clean fact view shared by Q&A, forecast, compare |
