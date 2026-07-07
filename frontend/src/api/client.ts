@@ -4,6 +4,7 @@ import type {
   AuthResponse,
   CleanedFactsResponse,
   CompareResponse,
+  CustomForecastRequest,
   DocumentDetail,
   DocumentSummary,
   Fact,
@@ -167,6 +168,14 @@ export const api = {
       req<ForecastResponse>(`/documents/${id}/forecast${q}`, undefined, 20000),
     );
   },
+  // Custom scenario: growth override (±) + weighted external factors + notes.
+  // Not cached — it's a live "what-if" the user drives.
+  customForecast: (id: string, body: CustomForecastRequest) =>
+    req<ForecastResponse>(
+      `/documents/${id}/forecast/custom`,
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+      20000,
+    ),
 
   // ---- v4 Q&A (POST; 20s timeout; not cached — each question is a user action) ----
   ask: (id: string, question: string, mode: string = "clean") =>

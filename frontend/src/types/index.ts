@@ -186,7 +186,7 @@ export interface CleanedFactsResponse {
 }
 
 // ---- v3: scenario forecasting ----
-export type ScenarioName = "base" | "bull" | "bear";
+export type ScenarioName = "base" | "bull" | "bear" | "custom";
 export type ConfidenceLevel = "low" | "medium" | "high";
 
 export interface ScenarioForecast {
@@ -219,6 +219,34 @@ export interface ScenarioAssumptions {
   external_factors: string[];
 }
 
+// ---- v4.x: configurable factors + custom scenario + impact ----
+export interface ForecastFactor {
+  id: string;
+  label_en: string;
+  label_zh: string;
+}
+
+export interface FactorImpact {
+  id: string;
+  label_en: string;
+  label_zh: string;
+  weight: number;
+  contribution_pp: number;
+}
+
+export interface ImpactDriver {
+  label: string;
+  detail: string;
+  magnitude_pp: number | null;
+}
+
+export interface ImpactSummary {
+  headline: string;
+  internal_drivers: ImpactDriver[];
+  external_drivers: FactorImpact[];
+  notes: string | null;
+}
+
 export interface ForecastResponse {
   document_id: string;
   company_name: string | null;
@@ -228,6 +256,7 @@ export interface ForecastResponse {
   forecast_period: string;
   cadence: string;
   annualized: boolean;
+  annualized_note: string | null;
   growth_override_pct: number | null;
   disclaimer: string;
   metrics: ForecastMetric[];
@@ -235,6 +264,19 @@ export interface ForecastResponse {
   key_risks: SummaryHighlight[];
   external_assumptions: ScenarioAssumptions[];
   external_note: string | null;
+  factors: ForecastFactor[];
+  factor_weights: Record<string, number>;
+  custom_notes: string | null;
+  impact_summary: ImpactSummary | null;
+}
+
+export interface CustomForecastRequest {
+  growth_override_pct?: number | null;
+  factor_weights?: Record<string, number>;
+  notes?: string | null;
+  value_delta_pp?: number | null;
+  margin_delta_pp?: number | null;
+  mode?: string;
 }
 
 // ---- v4: evidence-based Q&A ----

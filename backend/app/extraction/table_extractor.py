@@ -17,6 +17,7 @@ import re
 from app.extraction.base import FactDraft
 from app.extraction.value_parser import (
     detect_unit_header,
+    detect_unit_inline,
     looks_numeric,
     parse_number,
 )
@@ -138,13 +139,24 @@ def extract_from_tables(
     for t_index, table in enumerate(tables):
         rows = table.get("rows") or []
 
+        # Unit priority: a unit printed on the table itself (title / header row)
+        # wins over the page-level "单位：…" note, which in turn wins over any
+        # per-cell scale word. Never fabricated — only used when actually found.
+        header_text = " ".join(str(c) for c in (rows[0] if rows else []) if c)
+        title_text = str(table.get("title") or "")
+        table_unit_hint = (
+            detect_unit_inline(title_text)
+            or detect_unit_inline(header_text)
+            or page_unit_hint
+        )
+
         # Segment / geography breakdown tables: capture every line item as a
         # scoped business fact instead of trying (and failing) to map each
         # business name onto a core statement concept.
         kind = _classify_table(rows)
         if kind in _BREAKDOWN_META:
             drafts.extend(
-                _extract_breakdown_rows(kind, page_number, t_index, table, rows, page_unit_hint)
+                _extract_breakdown_rows(kind, page_number, t_index, table, rows, table_unit_hint)
             )
             continue
 
@@ -162,7 +174,7 @@ def extract_from_tables(
                 continue
             col_index, cell_text = value_cell
 
-            unit_hint = "%" if hit.concept.unit_hint == "percent" else page_unit_hint
+            unit_hint = "%" if hit.concept.unit_hint == "percent" else table_unit_hint
             parsed = parse_number(cell_text, unit_hint=unit_hint)
             if parsed is None:
                 continue

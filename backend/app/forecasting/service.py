@@ -12,13 +12,32 @@ from app.analysis import document_facts, normalize_mode
 from app.api.serializers import fact_to_out
 from app.cleaning.rules import normalize_unit
 from app.forecasting.assumptions import EXTERNAL_NOTE, external_assumptions
-from app.forecasting.engine import MetricInput, parse_prior_from_snippet, project_metric
-from app.forecasting.periods import annualization_factor, cadence_label, next_period_label
+from app.forecasting.engine import (
+    MetricInput,
+    parse_prior_from_snippet,
+    project_custom,
+    project_metric,
+)
+from app.forecasting.factors import (
+    contributions,
+    external_growth_adjustment_pp,
+    factor_catalog,
+    normalize_weights,
+)
+from app.forecasting.periods import (
+    annualization_factor,
+    cadence_label,
+    next_period_label,
+)
 from app.models.document import Document
 from app.models.fact import ExtractedFact, FactCategory
 from app.models.schemas import (
+    FactorImpact,
+    ForecastFactor,
     ForecastMetric,
     ForecastResponse,
+    ImpactDriver,
+    ImpactSummary,
     ScenarioForecast,
     SummaryHighlight,
 )
@@ -75,6 +94,8 @@ def forecast_document(
     value_delta_pp: float | None = None,
     margin_delta_pp: float | None = None,
     mode: str = "clean",
+    factor_weights: dict | None = None,
+    custom_notes: str | None = None,
 ) -> ForecastResponse:
     mode = normalize_mode(mode)
     pool = document_facts(db, document, mode)
@@ -83,6 +104,12 @@ def forecast_document(
     factor = annualization_factor(document.report_type)
     forecast_period = next_period_label(document.report_period, document.report_type)
 
+    # Configurable external factors → an explainable Custom-scenario tilt.
+    weights = normalize_weights(factor_weights)
+    external_pp = external_growth_adjustment_pp(weights)
+    factor_contribs = contributions(weights)
+    has_custom = bool(weights) or custom_notes or growth_override_pct is not None
+
     kwargs = {}
     if value_delta_pp is not None:
         kwargs["value_delta_pp"] = value_delta_pp
@@ -90,6 +117,7 @@ def forecast_document(
         kwargs["margin_delta_pp"] = margin_delta_pp
 
     metrics: list[ForecastMetric] = []
+    drivers: list[tuple[str, float, bool]] = []  # (metric_name, observed, is_percent)
     for cid in FORECAST_CONCEPTS:
         fact = best.get(cid)
         if fact is None:
@@ -113,10 +141,16 @@ def forecast_document(
             is_percent=is_percent,
             source_confidence=fact.confidence_score,
         )
-        scenarios = project_metric(m, growth_override_pct=growth_override_pct, **kwargs)
+        scenarios = list(project_metric(m, growth_override_pct=growth_override_pct, **kwargs))
+        # Custom scenario: base trend (or user override) + weighted factors.
+        if has_custom:
+            scenarios.append(project_custom(m, growth_override_pct, external_pp))
 
         out_scenarios: list[ScenarioForecast] = []
         for s in scenarios:
+            # Annualized value is an OPTIONAL companion view — the primary
+            # predicted_value already follows the report's own cadence (next
+            # quarter/half/year); we never replace it with an annualized figure.
             annualized = (
                 round(s.predicted_value * factor, 4)
                 if (factor > 1 and not is_percent)
@@ -136,6 +170,9 @@ def forecast_document(
                 )
             )
 
+        if observed is not None:
+            drivers.append((fact.metric_name, observed, is_percent))
+
         metrics.append(
             ForecastMetric(
                 concept_id=cid,
@@ -151,6 +188,8 @@ def forecast_document(
             )
         )
 
+    impact = _impact_summary(drivers, factor_contribs, external_pp, has_custom, custom_notes)
+
     return ForecastResponse(
         document_id=document.id,
         company_name=document.company_name,
@@ -160,6 +199,11 @@ def forecast_document(
         forecast_period=forecast_period,
         cadence=cadence_label(document.report_type),
         annualized=factor > 1,
+        annualized_note=(
+            f"Optional view: ×{factor} annualization of the {cadence_label(document.report_type)} "
+            "forecast, shown alongside — not instead of — the period figure."
+            if factor > 1 else None
+        ),
         growth_override_pct=growth_override_pct,
         disclaimer=DISCLAIMER,
         metrics=metrics,
@@ -167,4 +211,60 @@ def forecast_document(
         key_risks=_highlights(pool, FactCategory.RISK, 5),
         external_assumptions=external_assumptions(),
         external_note=EXTERNAL_NOTE,
+        factors=[ForecastFactor(id=f.id, label_en=f.label_en, label_zh=f.label_zh) for f in factor_catalog()],
+        factor_weights=weights,
+        custom_notes=custom_notes,
+        impact_summary=impact,
+    )
+
+
+def _impact_summary(
+    drivers: list[tuple[str, float, bool]],
+    factor_contribs,
+    external_pp: float,
+    has_custom: bool,
+    custom_notes: str | None,
+) -> ImpactSummary:
+    """Explain the forecast: strongest internal metric moves + external factors."""
+    # Internal drivers — rank the report's own metrics by absolute observed change.
+    ranked = sorted(drivers, key=lambda d: abs(d[1]), reverse=True)
+    internal: list[ImpactDriver] = []
+    for name, observed, is_percent in ranked[:4]:
+        unit = "pp" if is_percent else "%"
+        verb = "rose" if observed > 0 else ("fell" if observed < 0 else "was flat")
+        internal.append(
+            ImpactDriver(
+                label=name,
+                detail=f"{name} {verb} {observed:+.1f}{unit} vs the prior period, driving its projection.",
+                magnitude_pp=observed,
+            )
+        )
+
+    external = [
+        FactorImpact(
+            id=c.id, label_en=c.label_en, label_zh=c.label_zh,
+            weight=c.weight, contribution_pp=c.contribution_pp,
+        )
+        for c in factor_contribs
+    ]
+
+    top_metric = ranked[0][0] if ranked else None
+    parts: list[str] = []
+    if top_metric:
+        parts.append(f"Projection is anchored on {top_metric}'s observed trend")
+    if has_custom and external:
+        top = external[0]
+        parts.append(
+            f"external factors add {external_pp:+.1f}pp of growth "
+            f"(largest: {top.label_en} {top.contribution_pp:+.1f}pp)"
+        )
+    elif has_custom:
+        parts.append("no external factor weights applied (Custom uses your growth override only)")
+    headline = "; ".join(parts) + "." if parts else "Base/bull/bear scenarios follow the report's own trend."
+
+    return ImpactSummary(
+        headline=headline,
+        internal_drivers=internal,
+        external_drivers=external,
+        notes=custom_notes,
     )

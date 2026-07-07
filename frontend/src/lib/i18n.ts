@@ -90,6 +90,21 @@ export const UI: Record<string, Pair> = {
     zh: "这些是基于历史趋势的情景分析估算，并非保证性预测，不构成投资建议。",
     en: "These are scenario-based analytical estimates from historical trends — not guaranteed predictions or investment advice.",
   },
+  // v4.x forecast: custom scenario, factors, impact
+  scenarioCustom: { zh: "自定义", en: "Custom" },
+  customScenario: { zh: "自定义情景", en: "Custom scenario" },
+  customHint: {
+    zh: "调整增长率（可负）与外部因素权重，预测即时更新。",
+    en: "Adjust growth (may be negative) and external-factor weights — the forecast updates live.",
+  },
+  factorWeightsTitle: { zh: "外部因素权重 (−2 … +2)", en: "External factor weights (−2 … +2)" },
+  customNotes: { zh: "备注（可选）", en: "Notes (optional)" },
+  impactSummaryTitle: { zh: "影响分析", en: "Impact summary" },
+  internalDrivers: { zh: "内部指标驱动", en: "Internal metric drivers" },
+  externalDrivers: { zh: "外部因素影响", en: "External factor impact" },
+  resetCustom: { zh: "清除自定义", en: "Clear custom" },
+  headwindTailwind: { zh: "− 逆风 / + 顺风", en: "− headwind / + tailwind" },
+  annualizedOptional: { zh: "年化（可选视图）", en: "Annualized (optional view)" },
 
   // Q&A
   ask: { zh: "问答", en: "Ask" },
@@ -119,6 +134,10 @@ export const UI: Record<string, Pair> = {
   },
   // v4.2: scope-aware hierarchical metrics
   consolidatedTotals: { zh: "合并总额", en: "Consolidated totals" },
+  overallOverview: { zh: "总体财务概览", en: "Overall Financial Overview" },
+  businessSegments: { zh: "业务分部", en: "Business Segments" },
+  geographicSegments: { zh: "地区分部", en: "Geographic Segments" },
+  supportingNotesGroup: { zh: "补充说明", en: "Supporting Notes" },
   segmentBreakdown: { zh: "分部 / 业务明细", en: "Segment / business breakdown" },
   geographyBreakdown: { zh: "分地区明细", en: "Geographic breakdown" },
   otherBusiness: { zh: "其他业务指标", en: "Other business metrics" },
@@ -134,7 +153,7 @@ export const UI: Record<string, Pair> = {
 
   // v4.3: layered metric context + unit-as-evidence
   basisSuffix: { zh: "口径", en: " basis" },     // e.g. 合并口径 / Consolidated basis
-  unitUnknown: { zh: "未识别", en: "n/a" },       // unit could not be determined confidently
+  unitUnknown: { zh: "未识别单位", en: "Unknown Unit" }, // unit could not be determined confidently
   sourceHint: { zh: "来源", en: "Source" },
 
   // v4.3: evidence-centric cleaning view

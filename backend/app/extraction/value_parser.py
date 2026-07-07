@@ -90,6 +90,16 @@ def looks_numeric(text: str | None) -> bool:
     return bool(re.search(r"\d", str(text)))
 
 
+# Inline currency+scale token as printed in a table title or header cell, e.g.
+# "（人民币百万元）", "(RMB million)", "US$'000", "人民币千元". Currency optional.
+_INLINE_UNIT_RE = re.compile(
+    r"(人民币|港[币幣]|美元|新台[币幣]|rmb|hkd|usd|hk\$|us\$|cny)?\s*[（(]?\s*"
+    r"(百万元|千万元|千元|万元|亿元|十亿|百万|亿|万|千|million|billion|thousand|mn|bn)"
+    r"\s*[)）]?",
+    re.IGNORECASE,
+)
+
+
 def detect_unit_header(text: str) -> str | None:
     """Pull a table/page unit hint like '单位：人民币（亿元）' or 'in millions'."""
     if not text:
@@ -105,4 +115,20 @@ def detect_unit_header(text: str) -> str | None:
         scale = m2.group(1).lower()
         cur = (m2.group(2) or "").upper()
         return f"{scale}{(' ' + cur) if cur else ''}"
+    return None
+
+
+def detect_unit_inline(text: str | None) -> str | None:
+    """Recognise a unit printed *inside* a table title or header cell.
+
+    Higher-priority than the page-level note because it sits right on the table.
+    Only returns a unit when a real scale word is present — it never fabricates
+    one from an ambiguous string.
+    """
+    if not text:
+        return None
+    m = _INLINE_UNIT_RE.search(str(text))
+    if m and m.group(2):
+        token = m.group(0).strip(" 　()（）:：")
+        return token[:24] or None
     return None

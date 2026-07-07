@@ -18,6 +18,7 @@ from app.models.fact import ExtractedFact
 from app.models.schemas import (
     CleanedFactsResponse,
     CleaningAuditEntry,
+    CustomForecastRequest,
     ForecastResponse,
 )
 from app.models.user import User
@@ -68,4 +69,26 @@ def get_forecast(
         value_delta_pp=value_delta_pp,
         margin_delta_pp=margin_delta_pp,
         mode=mode,
+    )
+
+
+@router.post("/{document_id}/forecast/custom", response_model=ForecastResponse)
+def post_custom_forecast(
+    document_id: str,
+    req: CustomForecastRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """Custom scenario: user growth override (negative/zero/positive) + weighted
+    external factors, returning the base/bull/bear + custom scenarios and an
+    explainable impact summary. Ephemeral; unknown/zero weights are ignored."""
+    doc = get_owned_document(db, document_id, user)
+    return forecast_document(
+        db, doc,
+        growth_override_pct=req.growth_override_pct,
+        value_delta_pp=req.value_delta_pp,
+        margin_delta_pp=req.margin_delta_pp,
+        mode=req.mode,
+        factor_weights=req.factor_weights,
+        custom_notes=req.notes,
     )
