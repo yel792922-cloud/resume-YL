@@ -4,6 +4,7 @@ import { Layout } from "../components/Layout";
 import { api } from "../api/client";
 import { useLang } from "../lib/context";
 import { t } from "../lib/i18n";
+import { BUSINESS_STRUCTURE, GEO_SCOPE, INDUSTRY, REPORT_TYPE } from "../lib/profileLabels";
 
 export function Upload() {
   const { lang } = useLang();
@@ -11,6 +12,11 @@ export function Upload() {
   const [file, setFile] = useState<File | null>(null);
   const [company, setCompany] = useState("");
   const [period, setPeriod] = useState("");
+  // Report-profile hints (default "auto" → inferred from the report).
+  const [biz, setBiz] = useState("auto");
+  const [geo, setGeo] = useState("auto");
+  const [industry, setIndustry] = useState("auto");
+  const [rtype, setRtype] = useState("auto");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [maxMb, setMaxMb] = useState<number | null>(null);
@@ -27,7 +33,9 @@ export function Upload() {
     setBusy(true);
     setError(null);
     try {
-      const doc = await api.uploadDocument(file, company || undefined, period || undefined);
+      const doc = await api.uploadDocument(file, company || undefined, period || undefined, {
+        business_structure: biz, geo_scope: geo, industry, report_type: rtype,
+      });
       nav(`/reports/${doc.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -81,6 +89,35 @@ export function Upload() {
           <div>
             <label className="muted" style={{ fontSize: 12 }}>{lang === "zh" ? "报告期（可选）" : "Period (optional)"}</label>
             <input value={period} onChange={(e) => setPeriod(e.target.value)} style={{ width: "100%", marginTop: 4 }} placeholder="e.g. 2024 FY" />
+          </div>
+        </div>
+
+        {/* Report profile (optional hint) — defaults to auto-detect. */}
+        <div style={{ marginBottom: 16 }}>
+          <p className="section-title" style={{ marginBottom: 4 }}>{lang === "zh" ? "报告结构（可选，默认自动检测）" : "Report profile (optional — defaults to auto-detect)"}</p>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 10 }}>
+            {lang === "zh"
+              ? "这些只是提示，用于调整提取与分组方式；系统仍会自动推断。"
+              : "These are hints that tune extraction & grouping; the system still auto-infers."}
+          </div>
+          <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+            {([
+              [lang === "zh" ? "业务结构" : "Business structure", biz, setBiz, BUSINESS_STRUCTURE],
+              [lang === "zh" ? "地区范围" : "Geographic scope", geo, setGeo, GEO_SCOPE],
+              [lang === "zh" ? "行业 / 类型" : "Industry / style", industry, setIndustry, INDUSTRY],
+              [lang === "zh" ? "报告类型" : "Report type", rtype, setRtype, REPORT_TYPE],
+            ] as [string, string, (v: string) => void, Record<string, { zh: string; en: string }>][]).map(
+              ([label, val, set, map]) => (
+                <div key={label}>
+                  <label className="muted" style={{ fontSize: 12 }}>{label}</label>
+                  <select value={val} onChange={(e) => set(e.target.value)} style={{ width: "100%", marginTop: 4 }}>
+                    {Object.keys(map).map((id) => (
+                      <option key={id} value={id}>{lang === "zh" ? map[id].zh : map[id].en}</option>
+                    ))}
+                  </select>
+                </div>
+              ),
+            )}
           </div>
         </div>
 

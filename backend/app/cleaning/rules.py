@@ -25,6 +25,11 @@ class CleaningConfig:
     enable_boilerplate_filter: bool = True
     enable_dedup: bool = True
     enable_unit_normalization: bool = True
+    # How aggressively to merge equivalent facts. "standard" suits simple,
+    # single-business reports; "preserve" (complex / multi-business) additionally
+    # keeps facts from different table sections apart, so a conglomerate's
+    # repeated labels are never collapsed. Both only ever merge same-scope facts.
+    merge_strength: str = "standard"    # standard | preserve
 
 
 def active_rule_ids(config: "CleaningConfig | None" = None) -> list[str]:

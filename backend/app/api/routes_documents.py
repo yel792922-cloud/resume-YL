@@ -38,6 +38,7 @@ from app.models.schemas import (
     SnapshotSummary,
 )
 from app.models.user import User
+from app.profile import ReportProfile, infer_profile
 from app.sample.sample_report import SAMPLE_COMPANY, SAMPLE_PERIOD, build_sample_pdf
 from app.storage import delete_raw_file, enforce_retention
 from app.summary import build_summary
@@ -49,6 +50,15 @@ def _finalize_extraction(db: Session, doc: Document, user_id: int) -> None:
     """Snapshot the parse run and enforce per-user raw-file retention."""
     create_snapshot(db, doc)
     enforce_retention(db, user_id)
+
+
+def _apply_profile(db: Session, doc: Document, hints: ReportProfile | None) -> None:
+    """Infer the report profile (merging any user hints) and persist it."""
+    facts = db.query(ExtractedFact).filter(ExtractedFact.document_id == doc.id).all()
+    profile = infer_profile(doc, facts, hints)
+    doc.profile_json = profile.to_json()
+    db.add(doc)
+    db.commit()
 
 
 @router.get("", response_model=list[DocumentSummary])
@@ -68,6 +78,11 @@ async def upload_document(
     file: UploadFile = File(...),
     company_name: str | None = Form(None),
     report_period: str | None = Form(None),
+    # Optional report-profile hints (default "auto" → inferred from the report).
+    business_structure: str = Form("auto"),
+    geo_scope: str = Form("auto"),
+    industry: str = Form("auto"),
+    report_type: str = Form("auto"),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -93,6 +108,10 @@ async def upload_document(
     )
     try:
         extract_document(db, doc)
+        _apply_profile(db, doc, ReportProfile(
+            business_structure=business_structure, geo_scope=geo_scope,
+            industry=industry, report_type=report_type,
+        ))
         _finalize_extraction(db, doc, user.id)
     except Exception as exc:  # extraction failures shouldn't lose the upload
         doc.status = DocumentStatus.FAILED
@@ -115,6 +134,7 @@ def seed_sample(db: Session = Depends(get_db), user: User = Depends(get_current_
         company_name=SAMPLE_COMPANY, report_period=SAMPLE_PERIOD,
     )
     extract_document(db, doc)
+    _apply_profile(db, doc, None)   # auto-detect (the sample is multi-business)
     _finalize_extraction(db, doc, user.id)
     return document_to_summary(db, doc)
 
@@ -147,6 +167,9 @@ def toggle_favorite(document_id: str, db: Session = Depends(get_db), user: User 
 def reextract(document_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     doc = _get_owned_doc_or_404(db, document_id, user)
     extract_document(db, doc)
+    # Re-detect the profile, preserving any user-set hints from the prior run.
+    from app.profile import profile_from_json
+    _apply_profile(db, doc, profile_from_json(doc.profile_json))
     create_snapshot(db, doc, note="manual re-extract")
     return document_to_summary(db, doc)
 

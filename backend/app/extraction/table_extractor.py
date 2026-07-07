@@ -23,6 +23,7 @@ from app.extraction.value_parser import (
 )
 from app.models.fact import FactCategory
 from app.normalization.dictionary import TermMatcher, detect_language
+from app.normalization.metric_kind import is_mislabeled_amount
 from app.sourcemap.highlight import bbox_from_cell
 
 # Table-kind cues (bilingual), matched against the table's header/label column.
@@ -144,11 +145,10 @@ def extract_from_tables(
         # per-cell scale word. Never fabricated — only used when actually found.
         header_text = " ".join(str(c) for c in (rows[0] if rows else []) if c)
         title_text = str(table.get("title") or "")
-        table_unit_hint = (
-            detect_unit_inline(title_text)
-            or detect_unit_inline(header_text)
-            or page_unit_hint
-        )
+        # Priority: table title → table header (row label handled per-row below) →
+        # page note. Never fabricated.
+        table_scoped = detect_unit_inline(title_text) or detect_unit_inline(header_text)
+        table_unit_hint = table_scoped or page_unit_hint
 
         # Segment / geography breakdown tables: capture every line item as a
         # scoped business fact instead of trying (and failing) to map each
@@ -169,12 +169,20 @@ def extract_from_tables(
             hit = matcher.find_in(label)
             if hit is None:
                 continue
+            # Guard: a growth-rate / proportion / ratio row (e.g. "营业收入增长率",
+            # "收入占比") must not be captured as the amount concept it contains.
+            if is_mislabeled_amount(label, hit.concept.id):
+                continue
             value_cell = _first_value_cell(row, label_idx)
             if value_cell is None:
                 continue
             col_index, cell_text = value_cell
 
-            unit_hint = "%" if hit.concept.unit_hint == "percent" else table_unit_hint
+            # Row-label unit (e.g. "每股收益 (元)") slots between header and page note.
+            unit_hint = (
+                "%" if hit.concept.unit_hint == "percent"
+                else (table_scoped or detect_unit_inline(label) or page_unit_hint)
+            )
             parsed = parse_number(cell_text, unit_hint=unit_hint)
             if parsed is None:
                 continue
