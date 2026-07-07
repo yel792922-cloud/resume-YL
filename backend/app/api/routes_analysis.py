@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.api.ownership import get_owned_document
 from app.api.serializers import fact_to_out
 from app.auth.deps import get_current_user
-from app.cleaning import clean_facts
+from app.cleaning import active_rule_ids, clean_facts
 from app.core.db import get_db
 from app.forecasting import forecast_document
 from app.models.fact import ExtractedFact
@@ -42,7 +42,8 @@ def get_cleaned_facts(
     ]
     audit = [CleaningAuditEntry(**vars(a)) for a in result.audit]
     return CleanedFactsResponse(
-        document_id=doc.id, stats=result.stats, retained=retained, audit=audit
+        document_id=doc.id, stats=result.stats, rules=active_rule_ids(),
+        retained=retained, audit=audit,
     )
 
 

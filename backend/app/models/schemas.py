@@ -187,11 +187,14 @@ class CleaningAuditEntry(BaseModel):
     snippet: str | None = None
     detail: str | None = None
     confidence: float | None = None
+    page_number: int | None = None   # where the filtered item came from
+    report_section: str | None = None
 
 
 class CleanedFactsResponse(BaseModel):
     document_id: str
     stats: dict[str, int]            # {retained, removed, deduped, normalized}
+    rules: list[str] = []            # active cleaning-rule ids (UI localizes labels)
     retained: list[FactOut] = []     # cleaned, source-traceable facts
     audit: list[CleaningAuditEntry] = []
 

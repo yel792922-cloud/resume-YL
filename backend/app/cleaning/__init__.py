@@ -11,6 +11,6 @@ cleaned view is exposed via the API and reused as the input to forecasting.
 """
 
 from app.cleaning.pipeline import CleanResult, clean_facts
-from app.cleaning.rules import CleaningConfig
+from app.cleaning.rules import CleaningConfig, active_rule_ids
 
-__all__ = ["clean_facts", "CleanResult", "CleaningConfig"]
+__all__ = ["clean_facts", "CleanResult", "CleaningConfig", "active_rule_ids"]

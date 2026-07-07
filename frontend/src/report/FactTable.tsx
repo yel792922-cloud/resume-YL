@@ -1,6 +1,6 @@
 import { SourceLink, Confidence, ScopeChip } from "../components/ui";
 import { useLang } from "../lib/context";
-import { factValue } from "../lib/format";
+import { factValue, metricContext, unitDisplay } from "../lib/format";
 import type { Fact } from "../types";
 
 const BREAKDOWN = new Set(["segment", "geography"]);
@@ -42,10 +42,12 @@ export function FactTable({ facts }: { facts: Fact[] }) {
                   <strong>{primary}</strong>
                   <ScopeChip scopeType={f.scope_type} scopeLabel={f.scope_label} />
                 </div>
-                {sub && <div className="muted" style={{ fontSize: 11 }}>{sub}</div>}
+                {/* Layered context: scope · period · unit — keeps same-named rows distinct. */}
+                <div className="muted" style={{ fontSize: 11 }}>{metricContext(f, lang)}</div>
+                {sub && <div className="muted" style={{ fontSize: 11, opacity: 0.8 }}>{sub}</div>}
               </td>
               <td className="num" style={{ fontWeight: 600 }}>{factValue(f)}</td>
-              <td className="muted">{f.unit && f.unit !== "%" ? f.unit : "—"}</td>
+              <td className="muted">{unitDisplay(f, lang)}</td>
               <td><Confidence score={f.confidence_score} /></td>
               <td><SourceLink documentId={f.document_id} source={f.source} /></td>
             </tr>

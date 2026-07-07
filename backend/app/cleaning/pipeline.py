@@ -43,6 +43,10 @@ class AuditEntry:
     snippet: str | None = None
     detail: str | None = None
     confidence: float | None = None
+    # Source anchors so the cleaning view can show *where* a filtered item came
+    # from (page + section), making the audit evidence-centric, not just a list.
+    page_number: int | None = None
+    report_section: str | None = None
 
 
 @dataclass
@@ -88,6 +92,8 @@ def clean_facts(facts: list[ExtractedFact], config: CleaningConfig | None = None
                 snippet=(f.source_text_snippet or f.value_text or "")[:160] or None,
                 detail=detail,
                 confidence=f.confidence_score,
+                page_number=f.source_page_number,
+                report_section=f.report_section,
             )
         )
 

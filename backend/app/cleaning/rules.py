@@ -27,6 +27,27 @@ class CleaningConfig:
     enable_unit_normalization: bool = True
 
 
+def active_rule_ids(config: "CleaningConfig | None" = None) -> list[str]:
+    """Stable ids of the cleaning rules currently in effect.
+
+    Returned to the UI so the cleaning view can show a short 'rules summary'
+    (localized on the frontend) instead of an opaque filtered list. Order is the
+    order rules are applied in the pipeline.
+    """
+    cfg = config or CleaningConfig()
+    ids: list[str] = []
+    if cfg.enable_boilerplate_filter:
+        ids.append("boilerplate")
+    ids.append("ocr_garbage")
+    ids.append("low_information")
+    ids.append("min_confidence")
+    if cfg.enable_dedup:
+        ids.append("dedup")
+    if cfg.enable_unit_normalization:
+        ids.append("unit_normalization")
+    return ids
+
+
 # ---------------------------------------------------------------------------
 # Boilerplate / noise patterns (bilingual). Matched against qualitative snippets
 # (risk / management / guidance / business text), NOT against numeric concept
