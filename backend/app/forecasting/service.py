@@ -38,9 +38,11 @@ from app.models.schemas import (
     ForecastResponse,
     ImpactDriver,
     ImpactSummary,
+    PolicyEmphasis,
     ScenarioForecast,
     SummaryHighlight,
 )
+from app.profile import policy_for, profile_from_json
 
 # Core metrics we forecast, in reading order. Others are ignored to keep the
 # output focused on the stock-research signal.
@@ -100,6 +102,10 @@ def forecast_document(
     mode = normalize_mode(mode)
     pool = document_facts(db, document, mode)
     best = _best_by_concept(pool)
+
+    # Active analysis policy from the report profile — shapes the forecast emphasis
+    # and the suggested Custom-scenario factor weights (suggestions, not applied).
+    policy = policy_for(profile_from_json(getattr(document, "profile_json", None)))
 
     factor = annualization_factor(document.report_type)
     forecast_period = next_period_label(document.report_period, document.report_type)
@@ -215,6 +221,11 @@ def forecast_document(
         factor_weights=weights,
         custom_notes=custom_notes,
         impact_summary=impact,
+        policy_emphasis=PolicyEmphasis(
+            preferred_metric_families=policy.preferred_metric_families,
+            suggested_factor_weights=policy.forecast_driver_weights,
+            note=(policy.notes[-1] if policy.notes else None),
+        ),
     )
 
 

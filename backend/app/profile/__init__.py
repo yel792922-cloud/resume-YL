@@ -14,6 +14,7 @@ from app.profile.model import (
     profile_from_json,
     profile_options,
 )
+from app.profile.policy import ReportPolicy, policy_for
 
 __all__ = [
     "ReportProfile",
@@ -23,4 +24,6 @@ __all__ = [
     "BUSINESS_STRUCTURES",
     "GEO_SCOPES",
     "INDUSTRIES",
+    "ReportPolicy",
+    "policy_for",
 ]

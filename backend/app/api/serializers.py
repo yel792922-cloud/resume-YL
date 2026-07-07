@@ -9,16 +9,16 @@ from sqlalchemy.orm import Session
 from app.models.document import Document, Page
 from app.models.fact import ExtractedFact
 from app.models.snapshot import ParseSnapshot
-from app.models.schemas import DocumentSummary, FactOut, PageOut, ReportProfileOut, SourceRef
+from app.models.schemas import DocumentSummary, FactOut, PageOut, ReportPolicyOut, ReportProfileOut, SourceRef
 from app.normalization.scope import derive_scope
 from app.normalization.metric_kind import classify_kind
-from app.profile import infer_profile, profile_from_json
+from app.profile import infer_profile, policy_for, profile_from_json
 
 
-def fact_to_out(f: ExtractedFact) -> FactOut:
+def fact_to_out(f: ExtractedFact, conservative: bool = False) -> FactOut:
     bbox = json.loads(f.source_bbox_json) if f.source_bbox_json else None
     scope = derive_scope(f.category, f.concept_id, f.raw_label, f.report_section)
-    kind = classify_kind(f.category, f.concept_id, f.raw_label, f.unit, f.unit == "%")
+    kind = classify_kind(f.category, f.concept_id, f.raw_label, f.unit, f.unit == "%", conservative=conservative)
     return FactOut(
         id=f.id,
         document_id=f.document_id,
@@ -65,9 +65,13 @@ def document_to_summary(db: Session, d: Document) -> DocumentSummary:
     prof = profile_from_json(d.profile_json)
     if prof is None and d.facts:
         prof = infer_profile(d, list(d.facts), None)
-    profile_out = ReportProfileOut(**{
-        k: getattr(prof, k) for k in ReportProfileOut.model_fields
-    }) if prof else None
+    profile_out = None
+    if prof:
+        pol = policy_for(prof)
+        profile_out = ReportProfileOut(
+            **{k: getattr(prof, k) for k in ReportProfileOut.model_fields if k != "policy"},
+            policy=ReportPolicyOut(**{k: getattr(pol, k) for k in ReportPolicyOut.model_fields}),
+        )
     return DocumentSummary(
         id=d.id,
         filename=d.filename,

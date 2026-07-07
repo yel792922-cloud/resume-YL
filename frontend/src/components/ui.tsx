@@ -42,10 +42,24 @@ export function ProfileBanner({ profile }: { profile: ReportProfile | null }) {
           </button>
         )}
       </div>
-      {open && profile.rationale.length > 0 && (
-        <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 12.5 }} className="muted">
-          {profile.rationale.map((r, i) => <li key={i} style={{ marginBottom: 3 }}>{r}</li>)}
-        </ul>
+      {open && (
+        <div style={{ marginTop: 8 }}>
+          {profile.rationale.length > 0 && (
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }} className="muted">
+              {profile.rationale.map((r, i) => <li key={i} style={{ marginBottom: 3 }}>{r}</li>)}
+            </ul>
+          )}
+          {profile.policy && profile.policy.notes.length > 0 && (
+            <>
+              <div className="muted" style={{ fontSize: 11, fontWeight: 600, margin: "10px 0 4px" }}>
+                {lang === "zh" ? "对分析行为的影响" : "Impact on analysis behavior"}
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12.5 }} className="muted">
+                {profile.policy.notes.map((n, i) => <li key={i} style={{ marginBottom: 3 }}>{n}</li>)}
+              </ul>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

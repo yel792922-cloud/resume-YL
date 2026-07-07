@@ -14,7 +14,7 @@ from app.cleaning import clean_facts
 from app.cleaning.rules import CleaningConfig
 from app.models.document import Document
 from app.models.fact import ExtractedFact
-from app.profile import profile_from_json
+from app.profile import policy_for, profile_from_json
 
 # Accepted modes. Kept as plain strings so routes can validate with a pattern.
 RAW = "raw"
@@ -36,17 +36,14 @@ def all_facts(db: Session, document: Document) -> list[ExtractedFact]:
 
 
 def cleaning_config_for(document: Document) -> CleaningConfig:
-    """Pick a cleaning policy from the document's report profile.
+    """Cleaning configuration derived from the document's active report policy.
 
-    Complex / multi-business reports use "preserve" (keep repeated labels from
-    different tables apart); simple single-business reports use "standard".
+    The policy sets both merge aggressiveness (preserve vs standard) and cleaning
+    strictness (how much low-value noise to trim) — so complex reports keep more
+    context while simple reports get a cleaner, more merged view.
     """
     profile = profile_from_json(getattr(document, "profile_json", None))
-    complex_report = bool(profile) and (
-        profile.complexity == "complex"
-        or profile.business_structure in ("multi", "conglomerate")
-    )
-    return CleaningConfig(merge_strength="preserve" if complex_report else "standard")
+    return policy_for(profile).cleaning_config()
 
 
 def document_facts(db: Session, document: Document, mode: str = CLEAN) -> list[ExtractedFact]:

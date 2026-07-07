@@ -53,6 +53,17 @@ export interface Fact {
   source: SourceRef;
 }
 
+export interface ReportPolicy {
+  merge_aggressiveness: string;      // aggressive | conservative
+  scope_preservation: string;        // low | high
+  unit_inference_threshold: string;  // permissive | conservative
+  cleaning_strictness: string;       // strict | lenient
+  conservative_classification: boolean;
+  preferred_metric_families: string[];
+  forecast_driver_weights: Record<string, number>;
+  notes: string[];
+}
+
 export interface ReportProfile {
   business_structure: string; // single | multi | conglomerate | auto | unknown
   geo_scope: string;          // single_region | multi_region | global | auto | unknown
@@ -61,6 +72,7 @@ export interface ReportProfile {
   source: string;             // user | auto | mixed
   complexity: string;         // simple | complex
   rationale: string[];
+  policy: ReportPolicy | null;
 }
 
 export interface DocumentSummary {
@@ -280,6 +292,13 @@ export interface ForecastResponse {
   factor_weights: Record<string, number>;
   custom_notes: string | null;
   impact_summary: ImpactSummary | null;
+  policy_emphasis: PolicyEmphasis | null;
+}
+
+export interface PolicyEmphasis {
+  preferred_metric_families: string[];
+  suggested_factor_weights: Record<string, number>;
+  note: string | null;
 }
 
 export interface CustomForecastRequest {
