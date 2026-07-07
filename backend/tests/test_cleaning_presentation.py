@@ -20,6 +20,24 @@ def _section(id_, snippet, *, category=FactCategory.RISK, page=7, conf=0.5):
     )
 
 
+def test_preserve_merge_strength_keeps_section_distinct_facts():
+    from app.cleaning import clean_facts
+    from app.cleaning.rules import CleaningConfig
+
+    def _num(id_, section):
+        return ExtractedFact(
+            id=id_, document_id="d", category=FactCategory.INCOME_STATEMENT,
+            concept_id="revenue", metric_name="Revenue", metric_value=100.0,
+            unit="亿元", confidence_score=0.9, report_period="2024 FY",
+            report_section=section, source_text_snippet="revenue 100",
+        )
+    a, b = _num(1, "Income Statement (page 3)"), _num(2, "Income Statement (page 8)")
+    # standard → same scope/value/period collapse to one
+    assert len(clean_facts([a, b], CleaningConfig(merge_strength="standard")).retained) == 1
+    # preserve → different sections kept apart (safer for complex reports)
+    assert len(clean_facts([a, b], CleaningConfig(merge_strength="preserve")).retained) == 2
+
+
 def test_active_rule_ids_reported():
     ids = active_rule_ids()
     for r in ("boilerplate", "ocr_garbage", "low_information", "min_confidence", "dedup", "unit_normalization"):

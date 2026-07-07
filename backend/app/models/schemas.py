@@ -66,7 +66,22 @@ class FactOut(BaseModel):
     # vs a segment / geography / per-share figure). Derived, not stored.
     scope_type: str = ""              # consolidated | segment | geography | per_share | ""
     scope_label: str = ""            # e.g. "Consolidated total" or a segment/region name
+    # What kind of quantity this is (amount / ratio / growth / per_share / …), so
+    # ratios and growth rates are never read as amounts. Derived, not stored.
+    metric_kind: str = "uncertain"
     source: SourceRef
+
+
+class ReportProfileOut(BaseModel):
+    """Report structure hint/inference, used to adapt behavior + explain it."""
+
+    business_structure: str = "auto"   # single | multi | conglomerate | auto | unknown
+    geo_scope: str = "auto"            # single_region | multi_region | global | ...
+    industry: str = "auto"
+    report_type: str = "auto"
+    source: str = "auto"               # user | auto | mixed
+    complexity: str = "simple"         # simple | complex
+    rationale: list[str] = []
 
 
 class DocumentSummary(BaseModel):
@@ -87,6 +102,7 @@ class DocumentSummary(BaseModel):
     raw_available: bool = True         # False once retention removed the raw PDF
     fact_count: int = 0
     version_count: int = 0             # number of historical parse snapshots
+    profile: ReportProfileOut | None = None   # report structure hint/inference
     created_at: datetime
 
 

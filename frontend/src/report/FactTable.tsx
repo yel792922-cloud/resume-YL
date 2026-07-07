@@ -1,4 +1,4 @@
-import { SourceLink, Confidence, ScopeChip } from "../components/ui";
+import { SourceLink, Confidence, ScopeChip, KindChip } from "../components/ui";
 import { useLang } from "../lib/context";
 import { factValue, metricContext, unitDisplay } from "../lib/format";
 import type { Fact } from "../types";
@@ -41,6 +41,7 @@ export function FactTable({ facts }: { facts: Fact[] }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   <strong>{primary}</strong>
                   <ScopeChip scopeType={f.scope_type} scopeLabel={f.scope_label} />
+                  <KindChip kind={f.metric_kind} />
                 </div>
                 {/* Layered context: scope · period · unit — keeps same-named rows distinct. */}
                 <div className="muted" style={{ fontSize: 11 }}>{metricContext(f, lang)}</div>

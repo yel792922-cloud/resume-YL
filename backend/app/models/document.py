@@ -65,6 +65,9 @@ class Document(Base):
     )
     status_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_favorite: Mapped[bool] = mapped_column(default=False)
+    # Report-profile hint/inference (JSON): business structure, geo scope,
+    # industry, complexity + rationale. NULL for legacy rows (→ auto-detect).
+    profile_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(

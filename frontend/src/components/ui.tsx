@@ -4,7 +4,52 @@ import { useLang } from "../lib/context";
 import { useMode, type AnalysisMode } from "../lib/mode";
 import { t } from "../lib/i18n";
 import { confidenceTier, factValueWithUnit, metricContext } from "../lib/format";
-import type { ConfidenceLevel, DocumentStatus, Fact, SourceRef } from "../types";
+import { BUSINESS_STRUCTURE, COMPLEXITY, GEO_SCOPE, INDUSTRY, METRIC_KIND, plabel } from "../lib/profileLabels";
+import type { ConfidenceLevel, DocumentStatus, Fact, ReportProfile, SourceRef } from "../types";
+
+/** A chip naming a metric's *kind* (ratio / growth / per-share / …) so a ratio
+ *  is never read as an amount. Amount (the default) shows no chip. */
+export function KindChip({ kind }: { kind: string }) {
+  const { lang } = useLang();
+  const meta = METRIC_KIND[kind];
+  if (!meta) return null;   // amount / unknown-good → no chip (reduces noise)
+  return <span className={`pill ${meta.cls}`} style={{ fontSize: 11 }}>{lang === "zh" ? meta.zh : meta.en}</span>;
+}
+
+/** Explains how the report is being treated (single/multi-business, region,
+ *  complexity) and why — so the adaptive behavior is transparent. */
+export function ProfileBanner({ profile }: { profile: ReportProfile | null }) {
+  const { lang } = useLang();
+  const [open, setOpen] = useState(false);
+  if (!profile) return null;
+  const complex = profile.complexity === "complex";
+  return (
+    <div className="card card-pad" style={{ padding: "10px 14px", marginBottom: 16 }}>
+      <div className="row" style={{ alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span className="muted" style={{ fontSize: 12 }}>{lang === "zh" ? "报告画像" : "Report profile"}:</span>
+        <span className={`pill ${complex ? "amber" : "green"}`}>{plabel(COMPLEXITY, profile.complexity, lang)}</span>
+        <span className="pill blue">{plabel(BUSINESS_STRUCTURE, profile.business_structure, lang)}</span>
+        <span className="pill gray">{plabel(GEO_SCOPE, profile.geo_scope, lang)}</span>
+        {profile.industry && profile.industry !== "auto" && profile.industry !== "other" && (
+          <span className="pill gray">{plabel(INDUSTRY, profile.industry, lang)}</span>
+        )}
+        <span className="muted" style={{ fontSize: 11 }}>
+          · {profile.source === "auto" ? (lang === "zh" ? "自动检测" : "auto-detected") : (lang === "zh" ? "含用户设置" : "user-adjusted")}
+        </span>
+        {profile.rationale.length > 0 && (
+          <button className="btn ghost sm" style={{ marginLeft: "auto", padding: "2px 6px" }} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+            {open ? (lang === "zh" ? "收起原因" : "Hide why") : (lang === "zh" ? "为什么？" : "Why?")}
+          </button>
+        )}
+      </div>
+      {open && profile.rationale.length > 0 && (
+        <ul style={{ margin: "8px 0 0", paddingLeft: 18, fontSize: 12.5 }} className="muted">
+          {profile.rationale.map((r, i) => <li key={i} style={{ marginBottom: 3 }}>{r}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 /** Raw / Clean analysis-mode toggle. Reads the global mode; affects Q&A,
  *  forecasting, comparison and export. */

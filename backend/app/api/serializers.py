@@ -9,13 +9,16 @@ from sqlalchemy.orm import Session
 from app.models.document import Document, Page
 from app.models.fact import ExtractedFact
 from app.models.snapshot import ParseSnapshot
-from app.models.schemas import DocumentSummary, FactOut, PageOut, SourceRef
+from app.models.schemas import DocumentSummary, FactOut, PageOut, ReportProfileOut, SourceRef
 from app.normalization.scope import derive_scope
+from app.normalization.metric_kind import classify_kind
+from app.profile import infer_profile, profile_from_json
 
 
 def fact_to_out(f: ExtractedFact) -> FactOut:
     bbox = json.loads(f.source_bbox_json) if f.source_bbox_json else None
     scope = derive_scope(f.category, f.concept_id, f.raw_label, f.report_section)
+    kind = classify_kind(f.category, f.concept_id, f.raw_label, f.unit, f.unit == "%")
     return FactOut(
         id=f.id,
         document_id=f.document_id,
@@ -34,6 +37,7 @@ def fact_to_out(f: ExtractedFact) -> FactOut:
         version_id=f.version_id,
         scope_type=scope.scope_type,
         scope_label=scope.scope_label,
+        metric_kind=kind,
         source=SourceRef(
             page_number=f.source_page_number,
             section=f.report_section,
@@ -57,6 +61,13 @@ def document_to_summary(db: Session, d: Document) -> DocumentSummary:
         .scalar()
         or 0
     )
+    # Stored profile if present; otherwise infer on the fly for legacy rows.
+    prof = profile_from_json(d.profile_json)
+    if prof is None and d.facts:
+        prof = infer_profile(d, list(d.facts), None)
+    profile_out = ReportProfileOut(**{
+        k: getattr(prof, k) for k in ReportProfileOut.model_fields
+    }) if prof else None
     return DocumentSummary(
         id=d.id,
         filename=d.filename,
@@ -73,6 +84,7 @@ def document_to_summary(db: Session, d: Document) -> DocumentSummary:
         raw_available=d.raw_available,
         fact_count=int(fact_count),
         version_count=int(version_count),
+        profile=profile_out,
         created_at=d.created_at,
     )
 

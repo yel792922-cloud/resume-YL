@@ -49,7 +49,18 @@ export interface Fact {
   version_id: string;
   scope_type: string; // "consolidated" | "segment" | "geography" | "per_share" | ""
   scope_label: string;
+  metric_kind: string; // amount | ratio | growth | per_share | count | segment_total | geography_total | regulatory | user | uncertain
   source: SourceRef;
+}
+
+export interface ReportProfile {
+  business_structure: string; // single | multi | conglomerate | auto | unknown
+  geo_scope: string;          // single_region | multi_region | global | auto | unknown
+  industry: string;
+  report_type: string;
+  source: string;             // user | auto | mixed
+  complexity: string;         // simple | complex
+  rationale: string[];
 }
 
 export interface DocumentSummary {
@@ -68,6 +79,7 @@ export interface DocumentSummary {
   raw_available: boolean;
   fact_count: number;
   version_count: number;
+  profile: ReportProfile | null;
   created_at: string;
 }
 

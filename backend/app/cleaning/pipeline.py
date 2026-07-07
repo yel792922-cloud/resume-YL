@@ -125,7 +125,7 @@ def clean_facts(facts: list[ExtractedFact], config: CleaningConfig | None = None
     if cfg.enable_dedup:
         groups: dict[tuple, list[ExtractedFact]] = {}
         for f in kept:
-            groups.setdefault(_dedupe_key(f), []).append(f)
+            groups.setdefault(_dedupe_key(f, cfg.merge_strength), []).append(f)
         winners: set[int] = set()
         for members in groups.values():
             winner = max(members, key=lambda x: x.confidence_score)
@@ -155,14 +155,15 @@ def clean_facts(facts: list[ExtractedFact], config: CleaningConfig | None = None
     return CleanResult(retained=retained, audit=audit, normalized_units=normalized_units)
 
 
-def _dedupe_key(f: ExtractedFact) -> tuple:
+def _dedupe_key(f: ExtractedFact, merge_strength: str = "standard") -> tuple:
     if _is_numeric(f):
         # Include scope + period so we only merge *truly equivalent* facts. Two
         # rows that share a concept and value but sit at different scopes (a
         # segment vs the consolidated total) or in different periods are NOT
-        # duplicates and must both survive.
+        # duplicates and must both survive. In "preserve" mode we also keep the
+        # source section in the key, so complex reports never merge across tables.
         scope = derive_scope(f.category, f.concept_id, f.raw_label, f.report_section)
-        return (
+        key = (
             f.concept_id,
             round(f.metric_value, 4),
             normalize_unit(f.unit),
@@ -170,4 +171,7 @@ def _dedupe_key(f: ExtractedFact) -> tuple:
             scope.scope_label,
             f.report_period,
         )
+        if merge_strength == "preserve":
+            key = key + (f.report_section,)
+        return key
     return (f.category, _norm_text(f.source_text_snippet or f.value_text))

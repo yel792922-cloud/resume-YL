@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import { MetricCard, ModeToggle, SourceLink, StatusPill } from "../components/ui";
+import { MetricCard, ModeToggle, ProfileBanner, SourceLink, StatusPill } from "../components/ui";
 import { FactTable } from "./FactTable";
 import { SearchPanel } from "./SearchPanel";
 import { SourceBrowser } from "./SourceBrowser";
@@ -120,6 +120,8 @@ export function ReportDetail() {
         )}
         <span className="muted" style={{ fontSize: 12 }}>{facts.length} {lang === "zh" ? "项可追溯数据" : "traceable facts"}</span>
       </div>
+
+      <ProfileBanner profile={doc.profile} />
 
       <div className="tabs">
         {tabs.map((tb) => (

@@ -133,11 +133,19 @@ export const api = {
     req<DocumentSummary[]>(`/documents${favoritesOnly ? "?favorites_only=true" : ""}`),
   getDocument: (id: string) => req<DocumentDetail>(`/documents/${id}`),
   seedSample: () => req<DocumentSummary>(`/documents/seed`, { method: "POST" }),
-  uploadDocument: (file: File, companyName?: string, reportPeriod?: string) => {
+  uploadDocument: (
+    file: File,
+    companyName?: string,
+    reportPeriod?: string,
+    profile?: { business_structure?: string; geo_scope?: string; industry?: string; report_type?: string },
+  ) => {
     const form = new FormData();
     form.append("file", file);
     if (companyName) form.append("company_name", companyName);
     if (reportPeriod) form.append("report_period", reportPeriod);
+    for (const k of ["business_structure", "geo_scope", "industry", "report_type"] as const) {
+      if (profile?.[k]) form.append(k, profile[k]!);
+    }
     return req<DocumentSummary>(`/documents/upload`, { method: "POST", body: form });
   },
   deleteDocument: (id: string) => req<{ deleted: string }>(`/documents/${id}`, { method: "DELETE" }),
