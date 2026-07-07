@@ -17,6 +17,7 @@ from app.cleaning.rules import (
     _informative_char_count,
 )
 from app.models.fact import ExtractedFact, FactCategory
+from app.normalization.scope import derive_scope
 
 _NUMERIC_CATEGORIES = {
     FactCategory.INCOME_STATEMENT,
@@ -150,5 +151,17 @@ def clean_facts(facts: list[ExtractedFact], config: CleaningConfig | None = None
 
 def _dedupe_key(f: ExtractedFact) -> tuple:
     if _is_numeric(f):
-        return (f.concept_id, round(f.metric_value, 4), normalize_unit(f.unit))
+        # Include scope + period so we only merge *truly equivalent* facts. Two
+        # rows that share a concept and value but sit at different scopes (a
+        # segment vs the consolidated total) or in different periods are NOT
+        # duplicates and must both survive.
+        scope = derive_scope(f.category, f.concept_id, f.raw_label, f.report_section)
+        return (
+            f.concept_id,
+            round(f.metric_value, 4),
+            normalize_unit(f.unit),
+            scope.scope_type,
+            scope.scope_label,
+            f.report_period,
+        )
     return (f.category, _norm_text(f.source_text_snippet or f.value_text))

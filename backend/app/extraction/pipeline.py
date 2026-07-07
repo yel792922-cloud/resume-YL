@@ -17,6 +17,18 @@ from app.extraction.table_extractor import extract_from_tables
 from app.extraction.text_extractor import extract_from_text
 from app.models.document import Document, DocumentStatus, ReportType
 from app.models.fact import ExtractedFact, FactCategory
+from app.normalization.scope import derive_scope
+
+
+def _best_key(d: FactDraft) -> tuple:
+    """Grouping key for 'one draft per concept per page'.
+
+    Includes the derived scope label so a page that carries the consolidated
+    total *and* a segment/geography breakdown of the same concept keeps both,
+    instead of collapsing them into one ambiguous row.
+    """
+    scope = derive_scope(d.category, d.concept_id, d.raw_label, d.report_section)
+    return (d.concept_id, d.source_page_number, scope.scope_type, scope.scope_label)
 
 
 def _detect_report_type(text: str) -> ReportType:
@@ -108,13 +120,13 @@ def extract_document(db: Session, document: Document) -> int:
         for d in table_drafts:
             if d.concept_id:
                 table_concepts.add(d.concept_id)
-            key = (d.concept_id, d.source_page_number)
+            key = _best_key(d)
             if key not in best or d.confidence_score > best[key].confidence_score:
                 best[key] = d
 
         text_drafts = extract_from_text(page.page_number, page.text, words, matcher, set(table_concepts))
         for d in text_drafts:
-            key = (d.concept_id, d.source_page_number)
+            key = _best_key(d)
             if key not in best or d.confidence_score > best[key].confidence_score:
                 best[key] = d
 
@@ -148,12 +160,16 @@ def extract_document(db: Session, document: Document) -> int:
             FactCategory.BALANCE_SHEET,
             FactCategory.CASH_FLOW,
         }
+        # Segment / geography revenue are currency amounts too — they usually sit
+        # on a page that doesn't restate the unit header, so give them the
+        # document's dominant currency unit rather than leaving the unit blank.
+        currency_concepts = {"segment_revenue", "geographic_revenue"}
         for d in drafts:
             if (
                 d.unit is None
                 and d.metric_value is not None
-                and d.category in currency_categories
                 and d.concept_id != "eps"
+                and (d.category in currency_categories or d.concept_id in currency_concepts)
             ):
                 d.unit = dominant_unit
 

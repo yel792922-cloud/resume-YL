@@ -62,6 +62,10 @@ class FactOut(BaseModel):
     confidence_score: float
     extraction_method: str | None
     version_id: str
+    # Reporting scope that disambiguates same-named metrics (consolidated total
+    # vs a segment / geography / per-share figure). Derived, not stored.
+    scope_type: str = ""              # consolidated | segment | geography | per_share | ""
+    scope_label: str = ""            # e.g. "Consolidated total" or a segment/region name
     source: SourceRef
 
 

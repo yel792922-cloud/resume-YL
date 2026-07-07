@@ -37,6 +37,26 @@ export function ModeToggle() {
   );
 }
 
+const SCOPE_META: Record<string, { cls: string; key: "scopeConsolidated" | "scopeSegment" | "scopeGeography" | "scopePerShare" }> = {
+  consolidated: { cls: "blue", key: "scopeConsolidated" },
+  segment: { cls: "green", key: "scopeSegment" },
+  geography: { cls: "amber", key: "scopeGeography" },
+  per_share: { cls: "gray", key: "scopePerShare" },
+};
+
+/** A small pill naming a metric's reporting scope, so same-named rows are
+ *  easy to tell apart. Renders nothing for unscoped facts. */
+export function ScopeChip({ scopeType, scopeLabel }: { scopeType: string; scopeLabel?: string }) {
+  const { lang } = useLang();
+  const meta = SCOPE_META[scopeType];
+  if (!meta) return null;
+  return (
+    <span className={`pill ${meta.cls}`} style={{ fontSize: 11 }} title={scopeLabel || t(meta.key, lang)}>
+      {t(meta.key, lang)}
+    </span>
+  );
+}
+
 /** A clickable evidence chip → opens the source drawer with highlight. */
 export function SourceLink({
   documentId,

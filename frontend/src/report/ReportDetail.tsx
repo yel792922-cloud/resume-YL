@@ -133,18 +133,48 @@ export function ReportDetail() {
         </div>
       )}
 
-      {tab === "financials" && (
-        <div className="grid" style={{ gap: 22 }}>
-          {(["income_statement", "balance_sheet", "cash_flow", "business"] as FactCategory[]).map((c) =>
-            cat(c).length ? (
-              <div key={c} className="card">
-                <div className="card-pad" style={{ paddingBottom: 0 }}><p className="section-title">{categoryLabel(c, lang)}</p></div>
-                <FactTable facts={cat(c)} />
+      {tab === "financials" && (() => {
+        const business = cat("business");
+        const breakdowns = [
+          { title: t("segmentBreakdown", lang), facts: business.filter((f) => f.scope_type === "segment") },
+          { title: t("geographyBreakdown", lang), facts: business.filter((f) => f.scope_type === "geography") },
+          { title: t("otherBusiness", lang), facts: business.filter((f) => f.scope_type !== "segment" && f.scope_type !== "geography") },
+        ].filter((g) => g.facts.length);
+        return (
+          <div className="grid" style={{ gap: 24 }}>
+            {/* Consolidated totals — the group-level statements. */}
+            <div>
+              <p className="section-title">{t("consolidatedTotals", lang)}</p>
+              <div className="grid" style={{ gap: 16 }}>
+                {(["income_statement", "balance_sheet", "cash_flow"] as FactCategory[]).map((c) =>
+                  cat(c).length ? (
+                    <div key={c} className="card" style={{ overflowX: "auto" }}>
+                      <div className="card-pad" style={{ paddingBottom: 0 }}><p className="section-title">{categoryLabel(c, lang)}</p></div>
+                      <FactTable facts={cat(c)} />
+                    </div>
+                  ) : null
+                )}
               </div>
-            ) : null
-          )}
-        </div>
-      )}
+            </div>
+
+            {/* Segment / geography breakdowns — kept visually separate from totals. */}
+            {breakdowns.length > 0 && (
+              <div>
+                <p className="section-title">{lang === "zh" ? "分部与地区明细" : "Segment & geography breakdown"}</p>
+                <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>{t("breakdownNote", lang)}</div>
+                <div className="grid" style={{ gap: 16 }}>
+                  {breakdowns.map((g) => (
+                    <div key={g.title} className="card" style={{ overflowX: "auto" }}>
+                      <div className="card-pad" style={{ paddingBottom: 0 }}><p className="section-title">{g.title}</p></div>
+                      <FactTable facts={g.facts} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {tab === "management" && (
         <div className="grid">

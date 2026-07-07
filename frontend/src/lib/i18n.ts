@@ -117,6 +117,21 @@ export const UI: Record<string, Pair> = {
     zh: "以下外部因素为情景假设，并非本报告中的事实数据（仓库中无外部市场/宏观数据源）。",
     en: "The external factors below are scenario assumptions, not facts from this report (no external market/macro data source is available).",
   },
+  // v4.2: scope-aware hierarchical metrics
+  consolidatedTotals: { zh: "合并总额", en: "Consolidated totals" },
+  segmentBreakdown: { zh: "分部 / 业务明细", en: "Segment / business breakdown" },
+  geographyBreakdown: { zh: "分地区明细", en: "Geographic breakdown" },
+  otherBusiness: { zh: "其他业务指标", en: "Other business metrics" },
+  scopeConsolidated: { zh: "合并", en: "Consolidated" },
+  scopeSegment: { zh: "分部", en: "Segment" },
+  scopeGeography: { zh: "地区", en: "Geography" },
+  scopePerShare: { zh: "每股", en: "Per share" },
+  scopeColumn: { zh: "口径", en: "Scope" },
+  breakdownNote: {
+    zh: "同名指标按口径分组显示（合并总额与分部/地区明细分开），避免混淆。",
+    en: "Same-named metrics are grouped by scope — consolidated totals are kept separate from segment/geography detail to avoid ambiguity.",
+  },
+
   exportXlsx: { zh: "导出 Excel", en: "Export Excel" },
   exportCsv: { zh: "导出 CSV", en: "Export CSV" },
   exportJson: { zh: "导出 JSON", en: "Export JSON" },

@@ -18,10 +18,12 @@ from app.forecasting import forecast_document
 from app.forecasting.engine import parse_prior_from_snippet
 from app.models.document import Document
 from app.models.fact import ExtractedFact
+from app.normalization.scope import derive_scope
 from app.qa import answer_question
 
 _FACT_HEADERS = [
     "company", "report_period", "category", "concept", "metric", "metric_label",
+    "scope_type", "scope_label",
     "value", "value_text", "unit", "yoy_qoq", "source_page", "report_section",
     "source_snippet", "table_cell", "cleaning_status", "confidence", "extraction_method",
 ]
@@ -64,9 +66,11 @@ def _cleaning_status_map(facts: list[ExtractedFact]) -> dict[int, str]:
 
 
 def _fact_row(f: ExtractedFact, cleaning_status: str, unit: str | None) -> list:
+    scope = derive_scope(f.category, f.concept_id, f.raw_label, f.report_section)
     return [
         f.company_name, f.report_period, f.category.value, f.concept_id,
-        f.metric_name, f.metric_label, f.metric_value, f.value_text, unit,
+        f.metric_name, f.metric_label, scope.scope_type, scope.scope_label,
+        f.metric_value, f.value_text, unit,
         _yoy_qoq(f), f.source_page_number, f.report_section,
         (f.source_text_snippet or "")[:500], f.source_table_cell_reference,
         cleaning_status, round(f.confidence_score, 3), f.extraction_method,

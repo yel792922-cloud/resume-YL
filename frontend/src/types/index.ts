@@ -47,6 +47,8 @@ export interface Fact {
   confidence_score: number;
   extraction_method: string | null;
   version_id: string;
+  scope_type: string; // "consolidated" | "segment" | "geography" | "per_share" | ""
+  scope_label: string;
   source: SourceRef;
 }
 

@@ -10,10 +10,12 @@ from app.models.document import Document, Page
 from app.models.fact import ExtractedFact
 from app.models.snapshot import ParseSnapshot
 from app.models.schemas import DocumentSummary, FactOut, PageOut, SourceRef
+from app.normalization.scope import derive_scope
 
 
 def fact_to_out(f: ExtractedFact) -> FactOut:
     bbox = json.loads(f.source_bbox_json) if f.source_bbox_json else None
+    scope = derive_scope(f.category, f.concept_id, f.raw_label, f.report_section)
     return FactOut(
         id=f.id,
         document_id=f.document_id,
@@ -30,6 +32,8 @@ def fact_to_out(f: ExtractedFact) -> FactOut:
         confidence_score=f.confidence_score,
         extraction_method=f.extraction_method,
         version_id=f.version_id,
+        scope_type=scope.scope_type,
+        scope_label=scope.scope_label,
         source=SourceRef(
             page_number=f.source_page_number,
             section=f.report_section,
