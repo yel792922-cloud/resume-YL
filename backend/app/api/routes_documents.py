@@ -38,7 +38,7 @@ from app.models.schemas import (
     SnapshotSummary,
 )
 from app.models.user import User
-from app.profile import ReportProfile, infer_profile
+from app.profile import ReportProfile, infer_profile, policy_for, profile_from_json
 from app.sample.sample_report import SAMPLE_COMPANY, SAMPLE_PERIOD, build_sample_pdf
 from app.storage import delete_raw_file, enforce_retention
 from app.summary import build_summary
@@ -181,12 +181,14 @@ def get_facts(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    _get_owned_doc_or_404(db, document_id, user)
+    doc = _get_owned_doc_or_404(db, document_id, user)
     q = db.query(ExtractedFact).filter(ExtractedFact.document_id == document_id)
     if category:
         q = q.filter(ExtractedFact.category == category)
     facts = q.order_by(ExtractedFact.confidence_score.desc()).all()
-    return [fact_to_out(f) for f in facts]
+    # Classification strictness follows the report policy (complex → conservative).
+    conservative = policy_for(profile_from_json(doc.profile_json)).conservative_classification
+    return [fact_to_out(f, conservative=conservative) for f in facts]
 
 
 @router.get("/{document_id}/pages/{page_number}", response_model=PageOut)

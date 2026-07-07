@@ -103,6 +103,8 @@ export const UI: Record<string, Pair> = {
   internalDrivers: { zh: "内部指标驱动", en: "Internal metric drivers" },
   externalDrivers: { zh: "外部因素影响", en: "External factor impact" },
   resetCustom: { zh: "清除自定义", en: "Clear custom" },
+  profileEmphasis: { zh: "画像影响", en: "Profile emphasis" },
+  applyProfileDefaults: { zh: "应用画像建议权重", en: "Apply profile defaults" },
   headwindTailwind: { zh: "− 逆风 / + 顺风", en: "− headwind / + tailwind" },
   annualizedOptional: { zh: "年化（可选视图）", en: "Annualized (optional view)" },
 

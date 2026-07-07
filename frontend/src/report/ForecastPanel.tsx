@@ -179,6 +179,24 @@ export function ForecastPanel({ documentId }: { documentId: string }) {
               <p className="section-title" style={{ margin: "0 0 2px" }}>{t("customScenario", lang)}</p>
               <div className="muted" style={{ fontSize: 12 }}>{t("customHint", lang)}</div>
             </div>
+            {/* Profile emphasis — how the report profile shapes this forecast. */}
+            {data.policy_emphasis && (
+              <div className="row" style={{ alignItems: "center", gap: 8, flexWrap: "wrap", background: "var(--brand-soft)", borderRadius: 8, padding: "8px 10px" }}>
+                <span className="muted" style={{ fontSize: 12 }}>{t("profileEmphasis", lang)}:</span>
+                {data.policy_emphasis.preferred_metric_families.slice(0, 5).map((fam) => (
+                  <span key={fam} className="pill blue" style={{ fontSize: 11 }}>{fam}</span>
+                ))}
+                {Object.keys(data.policy_emphasis.suggested_factor_weights).length > 0 && (
+                  <button
+                    className="btn sm"
+                    style={{ marginLeft: "auto" }}
+                    onClick={() => setWeights({ ...data.policy_emphasis!.suggested_factor_weights })}
+                  >
+                    {t("applyProfileDefaults", lang)}
+                  </button>
+                )}
+              </div>
+            )}
             <div>
               <div className="row" style={{ justifyContent: "space-between", alignItems: "baseline" }}>
                 <span className="muted" style={{ fontSize: 12, fontWeight: 600 }}>{t("factorWeightsTitle", lang)}</span>

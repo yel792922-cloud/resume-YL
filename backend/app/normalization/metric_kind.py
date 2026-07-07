@@ -88,8 +88,14 @@ def classify_kind(
     raw_label: str | None,
     unit: str | None,
     is_percent: bool = False,
+    conservative: bool = False,
 ) -> str:
-    """Best-effort kind for a fact. Falls back to ``uncertain`` when unsure."""
+    """Best-effort kind for a fact. Falls back to ``uncertain`` when unsure.
+
+    ``conservative`` (set for complex reports by the report policy) makes weak
+    signals resolve to ``uncertain`` instead of being forced into a family — so
+    an ambiguous row is flagged rather than mis-grouped.
+    """
     label = raw_label or ""
 
     # 1) Label wording is the strongest signal for ratio-vs-amount confusion.
@@ -119,6 +125,6 @@ def classify_kind(
     # 3) No concept — lean on the label / category, else stay honest.
     if _RATIO.search(label):
         return RATIO
-    if category == FactCategory.BUSINESS:
+    if category == FactCategory.BUSINESS and not conservative:
         return USER
     return UNCERTAIN

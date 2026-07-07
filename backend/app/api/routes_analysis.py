@@ -8,6 +8,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from app.analysis import cleaning_config_for
 from app.api.ownership import get_owned_document
 from app.api.serializers import fact_to_out
 from app.auth.deps import get_current_user
@@ -15,6 +16,7 @@ from app.cleaning import active_rule_ids, clean_facts
 from app.core.db import get_db
 from app.forecasting import forecast_document
 from app.models.fact import ExtractedFact
+from app.profile import policy_for, profile_from_json
 from app.models.schemas import (
     CleanedFactsResponse,
     CleaningAuditEntry,
@@ -36,14 +38,18 @@ def get_cleaned_facts(
     trail of what was filtered/normalized and why. Non-destructive."""
     doc = get_owned_document(db, document_id, user)
     facts = db.query(ExtractedFact).filter(ExtractedFact.document_id == doc.id).all()
-    result = clean_facts(facts)
+    # Cleaning strictness + merge aggressiveness follow the report policy.
+    cfg = cleaning_config_for(doc)
+    result = clean_facts(facts, cfg)
+    conservative = policy_for(profile_from_json(doc.profile_json)).conservative_classification
 
     retained = [
-        fact_to_out(f).model_copy(update={"unit": result.unit_for(f)}) for f in result.retained
+        fact_to_out(f, conservative=conservative).model_copy(update={"unit": result.unit_for(f)})
+        for f in result.retained
     ]
     audit = [CleaningAuditEntry(**vars(a)) for a in result.audit]
     return CleanedFactsResponse(
-        document_id=doc.id, stats=result.stats, rules=active_rule_ids(),
+        document_id=doc.id, stats=result.stats, rules=active_rule_ids(cfg),
         retained=retained, audit=audit,
     )
 

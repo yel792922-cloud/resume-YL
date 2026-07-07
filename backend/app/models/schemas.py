@@ -72,6 +72,20 @@ class FactOut(BaseModel):
     source: SourceRef
 
 
+class ReportPolicyOut(BaseModel):
+    """The *active* analysis policy derived from the profile — what actually
+    changes in grouping / cleaning / classification / forecasting."""
+
+    merge_aggressiveness: str = "aggressive"     # aggressive | conservative
+    scope_preservation: str = "low"              # low | high
+    unit_inference_threshold: str = "permissive" # permissive | conservative
+    cleaning_strictness: str = "strict"          # strict | lenient
+    conservative_classification: bool = False
+    preferred_metric_families: list[str] = []
+    forecast_driver_weights: dict[str, int] = {}
+    notes: list[str] = []
+
+
 class ReportProfileOut(BaseModel):
     """Report structure hint/inference, used to adapt behavior + explain it."""
 
@@ -82,6 +96,7 @@ class ReportProfileOut(BaseModel):
     source: str = "auto"               # user | auto | mixed
     complexity: str = "simple"         # simple | complex
     rationale: list[str] = []
+    policy: ReportPolicyOut | None = None   # active analysis policy from this profile
 
 
 class DocumentSummary(BaseModel):
@@ -282,6 +297,14 @@ class ImpactSummary(BaseModel):
     notes: str | None = None
 
 
+class PolicyEmphasis(BaseModel):
+    """How the report profile shapes the forecast (suggestions, not auto-applied)."""
+
+    preferred_metric_families: list[str] = []
+    suggested_factor_weights: dict[str, int] = {}
+    note: str | None = None
+
+
 class ForecastResponse(BaseModel):
     document_id: str
     company_name: str | None = None
@@ -306,6 +329,7 @@ class ForecastResponse(BaseModel):
     factor_weights: dict[str, int] = {}          # echoed weights used for Custom
     custom_notes: str | None = None
     impact_summary: ImpactSummary | None = None
+    policy_emphasis: PolicyEmphasis | None = None   # how the profile shapes the forecast
 
 
 class CustomForecastRequest(BaseModel):
