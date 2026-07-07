@@ -169,6 +169,60 @@ def project_metric(
     return results
 
 
+def project_custom(
+    m: MetricInput,
+    growth_override_pct: float | None,
+    external_pp: float,
+) -> ScenarioResult:
+    """Project one metric under the user's Custom scenario.
+
+    Custom growth = (user growth override, or the observed trend) + the summed
+    external-factor adjustment. Fully explainable: the returned assumptions spell
+    out each contributing part. Supports negative / zero / positive growth.
+    """
+    has_prior = m.prior_value is not None and m.prior_value != 0
+
+    if m.is_percent:
+        observed_change = (m.current_value - m.prior_value) if has_prior else 0.0
+        base_change = growth_override_pct if growth_override_pct is not None else observed_change
+        change = base_change + external_pp
+        predicted = _clamp_margin(m.current_value + change)
+        return ScenarioResult(
+            scenario="custom",
+            predicted_value=predicted,
+            growth_pct=round(change, 2),
+            direction=_direction(m.current_value, predicted),
+            confidence="low",   # user-tuned scenario is exploratory by nature
+            assumptions=[
+                f"Base margin change {base_change:+.1f}pp"
+                + (" (your override)" if growth_override_pct is not None else " (observed)"),
+                f"External factors: {external_pp:+.1f}pp",
+                f"Custom margin change {change:+.1f}pp.",
+            ],
+            explanation=f"{m.metric_name}: {m.current_value:.1f}% → {predicted:.1f}% ({change:+.1f}pp).",
+        )
+
+    usable_prior = has_prior and m.current_value > 0 and (m.prior_value or 0) > 0
+    observed_growth = ((m.current_value / m.prior_value - 1) * 100) if usable_prior else 0.0
+    base_growth = growth_override_pct if growth_override_pct is not None else observed_growth
+    g = base_growth + external_pp
+    predicted = round(m.current_value * (1 + g / 100.0), 4)
+    return ScenarioResult(
+        scenario="custom",
+        predicted_value=predicted,
+        growth_pct=round(g, 2),
+        direction=_direction(m.current_value, predicted),
+        confidence="low",
+        assumptions=[
+            f"Base growth {base_growth:+.1f}%"
+            + (" (your override)" if growth_override_pct is not None else " (observed trend)"),
+            f"External factors: {external_pp:+.1f}pp",
+            f"Custom growth {g:+.1f}%.",
+        ],
+        explanation=f"{m.metric_name}: {m.current_value:g} → {predicted:g} ({g:+.1f}%).",
+    )
+
+
 def _value_assumptions(name: str, observed: float | None, applied: float, has_prior: bool) -> list[str]:
     base = (
         f"Observed period-over-period growth {observed:+.1f}%."

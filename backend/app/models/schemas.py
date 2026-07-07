@@ -231,6 +231,41 @@ class ScenarioAssumptions(BaseModel):
     external_factors: list[str] = []
 
 
+class ForecastFactor(BaseModel):
+    """A configurable external driver the user can weight (-2..+2)."""
+
+    id: str
+    label_en: str
+    label_zh: str
+
+
+class FactorImpact(BaseModel):
+    """How much a weighted factor moved the Custom scenario's growth."""
+
+    id: str
+    label_en: str
+    label_zh: str
+    weight: int
+    contribution_pp: float           # growth pp added (may be negative)
+
+
+class ImpactDriver(BaseModel):
+    """One 'why' line: an internal metric or external factor that mattered."""
+
+    label: str
+    detail: str
+    magnitude_pp: float | None = None  # signed pp/growth magnitude when numeric
+
+
+class ImpactSummary(BaseModel):
+    """Explains the forecast: what drove it, and which assumptions mattered most."""
+
+    headline: str
+    internal_drivers: list[ImpactDriver] = []   # from the report's own metrics
+    external_drivers: list[FactorImpact] = []   # from user factor weights
+    notes: str | None = None
+
+
 class ForecastResponse(BaseModel):
     document_id: str
     company_name: str | None = None
@@ -239,7 +274,8 @@ class ForecastResponse(BaseModel):
     base_period: str | None = None
     forecast_period: str
     cadence: str                     # quarter | half-year | year
-    annualized: bool = False         # whether annualized_value is provided
+    annualized: bool = False         # whether an OPTIONAL annualized view is provided
+    annualized_note: str | None = None  # explains the annualized view is optional
     growth_override_pct: float | None = None
     disclaimer: str
     metrics: list[ForecastMetric] = []
@@ -249,6 +285,20 @@ class ForecastResponse(BaseModel):
     # making clear these are assumptions, not report facts.
     external_assumptions: list[ScenarioAssumptions] = []
     external_note: str | None = None
+    # v4.x: configurable factors + custom scenario + impact explanation.
+    factors: list[ForecastFactor] = []          # catalog for the UI
+    factor_weights: dict[str, int] = {}          # echoed weights used for Custom
+    custom_notes: str | None = None
+    impact_summary: ImpactSummary | None = None
+
+
+class CustomForecastRequest(BaseModel):
+    growth_override_pct: float | None = Field(default=None, ge=-100, le=1000)
+    factor_weights: dict[str, int] = {}
+    notes: str | None = Field(default=None, max_length=500)
+    value_delta_pp: float | None = Field(default=None, ge=0, le=200)
+    margin_delta_pp: float | None = Field(default=None, ge=0, le=100)
+    mode: str = Field(default="clean", pattern="^(raw|clean)$")
 
 
 # ---------------------------- v4: evidence-based Q&A ----------------------------

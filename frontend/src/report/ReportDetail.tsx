@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { MetricCard, ModeToggle, SourceLink, StatusPill } from "../components/ui";
@@ -11,6 +11,35 @@ import { useLang, useSource } from "../lib/context";
 import { useMode } from "../lib/mode";
 import { categoryLabel, reportTypeLabel, t } from "../lib/i18n";
 import type { DocumentDetail, Fact, FactCategory, ReportSummary } from "../types";
+
+/** A collapsible metric group — the building block of the hierarchical
+ *  financials view. Header shows title + count and toggles open/closed. */
+function MetricGroup({
+  title, count, defaultOpen = false, children,
+}: { title: string; count: number; defaultOpen?: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="card" style={{ overflow: "hidden" }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="row"
+        style={{
+          width: "100%", justifyContent: "space-between", alignItems: "center", gap: 10,
+          padding: "12px 18px", background: "none", border: "none", borderBottom: open ? "1px solid var(--line)" : "none",
+          cursor: "pointer", textAlign: "left",
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span aria-hidden style={{ width: 12, color: "var(--ink-soft)" }}>{open ? "▾" : "▸"}</span>
+          <span className="section-title" style={{ margin: 0 }}>{title}</span>
+        </span>
+        <span className="pill gray" style={{ fontSize: 11 }}>{count}</span>
+      </button>
+      {open && <div style={{ overflowX: "auto" }}>{children}</div>}
+    </div>
+  );
+}
 
 // Analytics panels are code-split — loaded only when their tab is opened.
 const ForecastPanel = lazy(() => import("./ForecastPanel").then((m) => ({ default: m.ForecastPanel })));
@@ -135,42 +164,49 @@ export function ReportDetail() {
 
       {tab === "financials" && (() => {
         const business = cat("business");
-        const breakdowns = [
-          { title: t("segmentBreakdown", lang), facts: business.filter((f) => f.scope_type === "segment") },
-          { title: t("geographyBreakdown", lang), facts: business.filter((f) => f.scope_type === "geography") },
-          { title: t("otherBusiness", lang), facts: business.filter((f) => f.scope_type !== "segment" && f.scope_type !== "geography") },
-        ].filter((g) => g.facts.length);
+        const segments = business.filter((f) => f.scope_type === "segment");
+        const geography = business.filter((f) => f.scope_type === "geography");
+        const otherBiz = business.filter((f) => f.scope_type !== "segment" && f.scope_type !== "geography");
+        const overview = summary?.headline_metrics ?? [];
         return (
-          <div className="grid" style={{ gap: 24 }}>
-            {/* Consolidated totals — the group-level statements. */}
-            <div>
-              <p className="section-title">{t("consolidatedTotals", lang)}</p>
-              <div className="grid" style={{ gap: 16 }}>
-                {(["income_statement", "balance_sheet", "cash_flow"] as FactCategory[]).map((c) =>
-                  cat(c).length ? (
-                    <div key={c} className="card" style={{ overflowX: "auto" }}>
-                      <div className="card-pad" style={{ paddingBottom: 0 }}><p className="section-title">{categoryLabel(c, lang)}</p></div>
-                      <FactTable facts={cat(c)} />
-                    </div>
-                  ) : null
-                )}
-              </div>
-            </div>
+          <div className="grid" style={{ gap: 14 }}>
+            <div className="muted" style={{ fontSize: 12 }}>{t("breakdownNote", lang)}</div>
 
-            {/* Segment / geography breakdowns — kept visually separate from totals. */}
-            {breakdowns.length > 0 && (
-              <div>
-                <p className="section-title">{lang === "zh" ? "分部与地区明细" : "Segment & geography breakdown"}</p>
-                <div className="muted" style={{ fontSize: 12, marginBottom: 12 }}>{t("breakdownNote", lang)}</div>
-                <div className="grid" style={{ gap: 16 }}>
-                  {breakdowns.map((g) => (
-                    <div key={g.title} className="card" style={{ overflowX: "auto" }}>
-                      <div className="card-pad" style={{ paddingBottom: 0 }}><p className="section-title">{g.title}</p></div>
-                      <FactTable facts={g.facts} />
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {/* Hierarchical, collapsible groups. Overview + income open by default. */}
+            {overview.length > 0 && (
+              <MetricGroup title={t("overallOverview", lang)} count={overview.length} defaultOpen>
+                <div className="card-pad"><div className="metric-grid">
+                  {overview.map((f) => <MetricCard key={f.id} fact={f} />)}
+                </div></div>
+              </MetricGroup>
+            )}
+
+            {([
+              ["income_statement", true],
+              ["balance_sheet", false],
+              ["cash_flow", false],
+            ] as [FactCategory, boolean][]).map(([c, open]) =>
+              cat(c).length ? (
+                <MetricGroup key={c} title={categoryLabel(c, lang)} count={cat(c).length} defaultOpen={open}>
+                  <FactTable facts={cat(c)} />
+                </MetricGroup>
+              ) : null
+            )}
+
+            {segments.length > 0 && (
+              <MetricGroup title={t("businessSegments", lang)} count={segments.length}>
+                <FactTable facts={segments} />
+              </MetricGroup>
+            )}
+            {geography.length > 0 && (
+              <MetricGroup title={t("geographicSegments", lang)} count={geography.length}>
+                <FactTable facts={geography} />
+              </MetricGroup>
+            )}
+            {otherBiz.length > 0 && (
+              <MetricGroup title={t("supportingNotesGroup", lang)} count={otherBiz.length}>
+                <FactTable facts={otherBiz} />
+              </MetricGroup>
             )}
           </div>
         );
