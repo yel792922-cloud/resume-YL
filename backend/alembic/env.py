@@ -4,7 +4,7 @@ from __future__ import annotations
 from logging.config import fileConfig
 
 from alembic import context
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import create_engine, pool
 
 from app.core.config import get_settings
 from app.core.db import Base
@@ -16,15 +16,20 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Inject the normalized database URL from settings.
-config.set_main_option("sqlalchemy.url", get_settings().database_url)
+# The live DB URL. We build engines from this string *directly* (below) instead
+# of routing it through Alembic's ConfigParser: a Postgres password containing
+# '%' (common in Render's generated connection strings) would otherwise trigger
+# ConfigParser interpolation and crash `alembic upgrade head` at deploy time.
+DB_URL = get_settings().database_url
+# Escaped copy so any *internal* Alembic read of this option can't interpolate.
+config.set_main_option("sqlalchemy.url", DB_URL.replace("%", "%%"))
 
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=config.get_main_option("sqlalchemy.url"),
+        url=DB_URL,
         target_metadata=target_metadata,
         literal_binds=True,
         compare_type=True,
@@ -34,11 +39,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = create_engine(DB_URL, poolclass=pool.NullPool)
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
         with context.begin_transaction():
