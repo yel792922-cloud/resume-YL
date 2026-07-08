@@ -36,9 +36,15 @@ export function Layout({ title, actions, children }: { title: string; actions?: 
         <div className="spacer" />
         {user && (
           <div className="user-box">
-            <div className="user-email" title={user.email}>{user.email}</div>
+            {user.is_guest ? (
+              <div className="user-email" title={lang === "zh" ? "访客会话（数据临时）" : "Guest session (temporary data)"}>
+                <span className="pill amber" style={{ fontSize: 11 }}>{lang === "zh" ? "访客" : "Guest"}</span>
+              </div>
+            ) : (
+              <div className="user-email" title={user.email}>{user.email}</div>
+            )}
             <button className="btn ghost sm" style={{ color: "#b7c2d4" }} onClick={logout}>
-              {lang === "zh" ? "退出登录" : "Sign out"}
+              {lang === "zh" ? (user.is_guest ? "退出访客" : "退出登录") : (user.is_guest ? "Exit guest" : "Sign out")}
             </button>
           </div>
         )}

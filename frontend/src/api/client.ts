@@ -19,15 +19,25 @@ import type {
 } from "../types";
 
 const BASE = "/api";
-const TOKEN_KEY = "fra_token";
+const TOKEN_KEY = "fra_token";              // registered accounts
+const GUEST_TOKEN_KEY = "fra_guest_token";  // guest sessions
 
-// ---- Token storage (localStorage; JWT bearer, cross-origin friendly) ----
+// ---- Token storage (JWT bearer, cross-origin friendly) ----
+// Registered tokens live in localStorage so login survives refreshes and
+// browser restarts. Guest tokens live in sessionStorage so a guest session is
+// intentionally temporary — it resets on a new browser session / app restart
+// and never mixes with a real account.
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(GUEST_TOKEN_KEY);
 }
-export function setToken(token: string | null): void {
-  if (token) localStorage.setItem(TOKEN_KEY, token);
-  else localStorage.removeItem(TOKEN_KEY);
+export function setToken(token: string | null, guest = false): void {
+  // Any auth transition clears both stores first, so the two modes never overlap.
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(GUEST_TOKEN_KEY);
+  if (token) {
+    if (guest) sessionStorage.setItem(GUEST_TOKEN_KEY, token);
+    else localStorage.setItem(TOKEN_KEY, token);
+  }
 }
 
 // Registered by AuthProvider so a 401 anywhere logs the user out cleanly.
@@ -125,6 +135,7 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
     }),
+  guest: () => req<AuthResponse>("/auth/guest", { method: "POST" }),
   me: () => req<User>("/auth/me"),
   logout: () => req<{ status: string }>("/auth/logout", { method: "POST" }),
 

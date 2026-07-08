@@ -3,6 +3,7 @@
 export interface User {
   id: number;
   email: string;
+  is_guest: boolean;
   created_at: string;
 }
 

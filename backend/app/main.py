@@ -24,20 +24,44 @@ settings = get_settings()
 import logging
 
 logger = logging.getLogger("app")
+# uvicorn configures this logger at INFO, so startup diagnostics reliably show up
+# in Render/Vercel logs (the bare "app" logger would be swallowed by default).
+startup_logger = logging.getLogger("uvicorn.error")
 
 
-def _check_production_config() -> None:
+def _check_production_config(s=None) -> None:
     """Fail fast on unsafe production config; warn on soft issues.
 
-    A non-SQLite database implies production, where a forgeable JWT key is a
-    security hole — so refuse to start unless FRA_SECRET_KEY / SECRET_KEY is set.
+    Two production hazards are guarded here:
+    * a forgeable JWT key (dev SECRET_KEY) with a real database, and
+    * silently running on **ephemeral SQLite** — which loses every registered
+      user and their documents on each redeploy/restart.
     """
+    settings = s if s is not None else globals()["settings"]
+    # Make the effective persistence backend visible in the logs — the single
+    # most useful signal when accounts appear to "disappear".
+    startup_logger.info(
+        "Auth/persistence: db_backend=%s durable_required=%s secret=%s",
+        settings.db_backend,
+        settings.require_durable_db,
+        "dev-default" if settings.using_default_secret else "configured",
+    )
+
+    # Never silently fall back to transient storage in production.
+    if settings.require_durable_db and settings.is_sqlite:
+        raise RuntimeError(
+            "A durable database is required here (hosting platform detected) but "
+            "the app is configured to use SQLite, which is ephemeral on this "
+            "filesystem — registered users would be lost on every redeploy. Set "
+            "DATABASE_URL (or FRA_DATABASE_URL) to your Postgres connection string."
+        )
+
     if settings.using_default_secret:
-        if not settings.is_sqlite:
+        if not settings.is_sqlite or settings.require_durable_db:
             raise RuntimeError(
-                "SECRET_KEY is unset (using the built-in dev key) but a non-SQLite "
-                "database is configured. Set FRA_SECRET_KEY / SECRET_KEY to a long "
-                "random value in production."
+                "SECRET_KEY is unset (using the built-in dev key) in a production "
+                "configuration. Set FRA_SECRET_KEY / SECRET_KEY to a long random "
+                "value so login tokens stay valid and unforgeable across redeploys."
             )
         logger.warning("Using the insecure dev SECRET_KEY (fine for local dev only).")
 

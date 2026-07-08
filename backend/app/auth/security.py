@@ -25,12 +25,17 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(subject: str | int, expires_minutes: int | None = None) -> str:
+def create_access_token(
+    subject: str | int,
+    expires_minutes: int | None = None,
+    guest: bool = False,
+) -> str:
     settings = get_settings()
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=expires_minutes or settings.access_token_expire_minutes
-    )
-    payload = {"sub": str(subject), "exp": expire, "type": "access"}
+    # Guest sessions are short-lived by design (not durable); real accounts get
+    # the standard longer-lived token so ordinary use survives refreshes.
+    ttl = expires_minutes or (60 * 8 if guest else settings.access_token_expire_minutes)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ttl)
+    payload = {"sub": str(subject), "exp": expire, "type": "access", "guest": guest}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
 
 
