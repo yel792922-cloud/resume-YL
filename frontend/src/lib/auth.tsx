@@ -5,8 +5,10 @@ import type { User } from "../types";
 interface AuthCtx {
   user: User | null;
   ready: boolean; // finished restoring session
+  isGuest: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  guest: () => Promise<void>;
   logout: () => void;
 }
 
@@ -18,6 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   const logout = () => {
+    // Tell the server so a guest workspace is wiped; then clear local state.
+    api.logout().catch(() => {});
     setToken(null);
     setUser(null);
   };
@@ -53,9 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(res.access_token);
     setUser(res.user);
   };
+  // Guest token goes to sessionStorage (ephemeral) via setToken(..., true).
+  const guest = async () => {
+    const res = await api.guest();
+    setToken(res.access_token, true);
+    setUser(res.user);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, ready, login, register, logout }}>
+    <AuthContext.Provider value={{ user, ready, isGuest: !!user?.is_guest, login, register, guest, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -85,6 +85,11 @@ class Settings(BaseSettings):
             return [o.strip() for o in v.split(",") if o.strip()]
         return v
 
+    # When true, the app refuses to start on ephemeral SQLite (see main.py) so a
+    # missing DATABASE_URL can never silently drop us onto transient storage that
+    # loses users/documents on every redeploy. Auto-enabled on hosting platforms.
+    require_durable_db: bool = False           # FRA_REQUIRE_DURABLE_DB
+
     @property
     def is_sqlite(self) -> bool:
         return self.database_url.startswith("sqlite")
@@ -92,6 +97,13 @@ class Settings(BaseSettings):
     @property
     def using_default_secret(self) -> bool:
         return self.secret_key == DEFAULT_DEV_SECRET
+
+    @property
+    def db_backend(self) -> str:
+        """Coarse backend name for logging (never exposes credentials)."""
+        if self.is_sqlite:
+            return "sqlite"
+        return self.database_url.split("://", 1)[0] or "unknown"
 
     @property
     def max_upload_bytes(self) -> int:
@@ -116,6 +128,14 @@ def get_settings() -> Settings:
         overrides["database_url"] = os.environ["DATABASE_URL"]
     if "FRA_SECRET_KEY" not in os.environ and os.environ.get("SECRET_KEY"):
         overrides["secret_key"] = os.environ["SECRET_KEY"]
+
+    # Auto-require a durable DB when running on a hosting platform (Render sets
+    # RENDER, Heroku sets DYNO). This turns a misconfigured/missing DATABASE_URL
+    # into a hard startup failure instead of silent, data-losing SQLite.
+    if "FRA_REQUIRE_DURABLE_DB" not in os.environ and (
+        os.environ.get("RENDER") or os.environ.get("DYNO")
+    ):
+        overrides["require_durable_db"] = True
 
     settings = Settings(**overrides)
     settings.ensure_dirs()

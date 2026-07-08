@@ -20,6 +20,10 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # The shared guest workspace (see app/auth/guest.py). A guest is NOT a real
+    # account: it can't log in with a password and its data is wiped on every
+    # guest entry/logout. Regular accounts are always is_guest=False.
+    is_guest: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
     documents: Mapped[list["Document"]] = relationship(  # noqa: F821

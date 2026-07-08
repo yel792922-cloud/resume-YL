@@ -25,6 +25,7 @@ class UserOut(BaseModel):
 
     id: int
     email: str
+    is_guest: bool = False
     created_at: datetime
 
 

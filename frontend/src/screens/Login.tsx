@@ -5,7 +5,7 @@ import { t } from "../lib/i18n";
 
 export function Login() {
   const { lang, setLang } = useLang();
-  const { login, register } = useAuth();
+  const { login, register, guest } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +64,31 @@ export function Login() {
             {busy ? "…" : mode === "login" ? (lang === "zh" ? "登录" : "Sign in") : lang === "zh" ? "创建账户" : "Create account"}
           </button>
         </form>
+
+        {/* Guest mode — temporary session, not a real account. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0 12px" }}>
+          <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
+          <span className="muted" style={{ fontSize: 11 }}>{lang === "zh" ? "或" : "or"}</span>
+          <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
+        </div>
+        <button
+          className="btn"
+          disabled={busy}
+          style={{ width: "100%", justifyContent: "center" }}
+          onClick={async () => {
+            setBusy(true); setError(null);
+            try { await guest(); }
+            catch (err) { setError(err instanceof Error ? err.message : String(err)); }
+            finally { setBusy(false); }
+          }}
+        >
+          {lang === "zh" ? "以访客身份体验" : "Continue as guest"}
+        </button>
+        <div className="muted" style={{ fontSize: 11, marginTop: 6, textAlign: "center" }}>
+          {lang === "zh"
+            ? "访客数据为临时性，登出或新会话后清空。"
+            : "Guest data is temporary — cleared on logout or a new session."}
+        </div>
 
         <div className="muted" style={{ fontSize: 12, marginTop: 16, textAlign: "center" }}>
           {t("traceEvery", lang)}

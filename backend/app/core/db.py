@@ -10,11 +10,20 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-engine = create_engine(
-    settings.database_url,
-    echo=False,
-    connect_args={"check_same_thread": False} if settings.database_url.startswith("sqlite") else {},
-)
+_is_sqlite = settings.database_url.startswith("sqlite")
+
+# For a real (Postgres) database — especially free tiers that idle/recycle
+# connections — `pool_pre_ping` checks a connection is alive before use and
+# `pool_recycle` drops ones older than 5 min. Without this, a pooled connection
+# dropped while the DB slept surfaces as an error that looks like a lost login.
+_engine_kwargs: dict = {"echo": False}
+if _is_sqlite:
+    _engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    _engine_kwargs["pool_pre_ping"] = True
+    _engine_kwargs["pool_recycle"] = 300
+
+engine = create_engine(settings.database_url, **_engine_kwargs)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
