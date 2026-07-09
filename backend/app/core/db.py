@@ -10,7 +10,11 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-_is_sqlite = settings.database_url.startswith("sqlite")
+# Single source of truth: a parsed SQLAlchemy URL object (see config.coerce_db_url).
+# Passing the URL object straight to create_engine avoids any string re-parsing,
+# so passwords with URL-sensitive characters are handled safely.
+_db_url = settings.sqlalchemy_url
+_is_sqlite = _db_url.get_backend_name() == "sqlite"
 
 # For a real (Postgres) database — especially free tiers that idle/recycle
 # connections — `pool_pre_ping` checks a connection is alive before use and
@@ -23,7 +27,7 @@ else:
     _engine_kwargs["pool_pre_ping"] = True
     _engine_kwargs["pool_recycle"] = 300
 
-engine = create_engine(settings.database_url, **_engine_kwargs)
+engine = create_engine(_db_url, **_engine_kwargs)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
