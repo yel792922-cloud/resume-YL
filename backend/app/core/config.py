@@ -9,6 +9,7 @@ from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import URL, make_url
 
 # backend/  (two parents up from app/core/config.py)
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -16,17 +17,24 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 # Sentinel dev key; production MUST override it (enforced at startup for non-SQLite).
 DEFAULT_DEV_SECRET = "dev-insecure-secret-change-me-in-production-0123456789"
 
+_PSYCOPG_DRIVER = "postgresql+psycopg"
 
-def _normalize_db_url(url: str) -> str:
-    """Normalize a database URL to a SQLAlchemy-compatible driver form.
 
-    Render/Heroku hand out ``postgres://…``; SQLAlchemy 2.0 needs an explicit
-    driver. We standardize on psycopg 3 (``postgresql+psycopg://``).
+def coerce_db_url(value: str | URL) -> URL:
+    """The single source of truth for the database URL.
+
+    Parses any accepted URL (env string or ``URL``) into a SQLAlchemy
+    :class:`~sqlalchemy.engine.URL` and standardizes Postgres onto psycopg 3.
+    Using ``make_url`` (parser) + ``URL.set`` (builder) — never string surgery —
+    means a password with URL-sensitive characters (``%``, ``@``, ``:``, ``/``,
+    ``?``, ``#``, ``&``, spaces, …) is decoded once and carried safely to the
+    driver. Render/Heroku's ``postgres://`` scheme is upgraded here too.
     """
-    if url.startswith("postgres://"):
-        url = "postgresql://" + url[len("postgres://"):]
-    if url.startswith("postgresql://"):
-        url = "postgresql+psycopg://" + url[len("postgresql://"):]
+    url = value if isinstance(value, URL) else make_url(value)
+    # get_backend_name() ignores the +driver suffix, so this also upgrades
+    # postgresql+psycopg2:// (and a bare postgres://) onto psycopg 3.
+    if url.get_backend_name() in ("postgres", "postgresql"):
+        url = url.set(drivername=_PSYCOPG_DRIVER)
     return url
 
 
@@ -75,7 +83,12 @@ class Settings(BaseSettings):
     @field_validator("database_url", mode="before")
     @classmethod
     def _fix_db_url(cls, v: str) -> str:
-        return _normalize_db_url(v) if isinstance(v, str) else v
+        # Store the canonical, safely re-encoded string form (driver upgraded).
+        # hide_password=False keeps the real password; render_as_string
+        # percent-encodes any special characters correctly.
+        if isinstance(v, str) and v:
+            return coerce_db_url(v).render_as_string(hide_password=False)
+        return v
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -91,8 +104,14 @@ class Settings(BaseSettings):
     require_durable_db: bool = False           # FRA_REQUIRE_DURABLE_DB
 
     @property
+    def sqlalchemy_url(self) -> URL:
+        """The canonical SQLAlchemy URL object — pass this to create_engine and
+        Alembic so no layer re-parses/re-formats the URL string by hand."""
+        return coerce_db_url(self.database_url)
+
+    @property
     def is_sqlite(self) -> bool:
-        return self.database_url.startswith("sqlite")
+        return self.sqlalchemy_url.get_backend_name() == "sqlite"
 
     @property
     def using_default_secret(self) -> bool:
@@ -101,9 +120,7 @@ class Settings(BaseSettings):
     @property
     def db_backend(self) -> str:
         """Coarse backend name for logging (never exposes credentials)."""
-        if self.is_sqlite:
-            return "sqlite"
-        return self.database_url.split("://", 1)[0] or "unknown"
+        return self.sqlalchemy_url.get_backend_name() or "unknown"
 
     @property
     def max_upload_bytes(self) -> int:

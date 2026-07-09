@@ -93,5 +93,5 @@ def test_local_sqlite_dev_is_allowed():
 
 def test_db_backend_reports_postgres_without_credentials():
     s = _settings(database_url="postgresql+psycopg://user:secret@host:5432/db")
-    assert s.db_backend == "postgresql+psycopg"
+    assert s.db_backend == "postgresql"          # backend name, no +driver, no creds
     assert "secret" not in s.db_backend

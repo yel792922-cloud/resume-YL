@@ -16,13 +16,12 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# The live DB URL. We build engines from this string *directly* (below) instead
-# of routing it through Alembic's ConfigParser: a Postgres password containing
-# '%' (common in Render's generated connection strings) would otherwise trigger
-# ConfigParser interpolation and crash `alembic upgrade head` at deploy time.
-DB_URL = get_settings().database_url
-# Escaped copy so any *internal* Alembic read of this option can't interpolate.
-config.set_main_option("sqlalchemy.url", DB_URL.replace("%", "%%"))
+# The one canonical SQLAlchemy URL object (see app.core.config.coerce_db_url),
+# shared with the app runtime. Engines are built from this object directly and
+# the URL is never routed through Alembic's ConfigParser, so a Postgres password
+# containing '%' (or any URL-sensitive character) can't trigger interpolation and
+# crash `alembic upgrade head` at deploy time.
+DB_URL = get_settings().sqlalchemy_url
 
 target_metadata = Base.metadata
 
